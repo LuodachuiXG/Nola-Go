@@ -1,0 +1,15 @@
+env: dev
+server:
+  host: 0.0.0.0
+  port: 8098
+mysql:
+  dsn: "root:123456@tcp(127.0.0.1:3306)/nola?loc=Asia%2FShanghai&charset=utf8mb4&parseTime=True"
+redis:
+  add: 127.0.0.1:6379
+  password: ""
+  db: 0
+jwt:
+  secret: "jwt-secret"
+  issuer: "nola-go"
+  audience: "nola-go"
+  expire_minutes: 180
