@@ -4,6 +4,7 @@
 # Binaries for programs and plugins
 .idea
 .vscode
+.DS_Store
 
 *.exe
 *.exe~

@@ -12,16 +12,16 @@ type AuthResponse struct {
 	DisplayName string `json:"displayName"`
 
 	// Description 描述
-	Description *string `json:"description,omitempty"`
+	Description *string `json:"description"`
 
 	// CreateDate 注册时间戳毫秒
 	CreateDate int64 `json:"createDate"`
 
 	// LastLoginDate 最后登录日期
-	LastLoginDate *int64 `json:"lastLoginDate,omitempty"`
+	LastLoginDate *int64 `json:"lastLoginDate"`
 
 	// Avatar 头像地址
-	Avatar *string `json:"avatar,omitempty"`
+	Avatar *string `json:"avatar"`
 
 	// Token 令牌
 	Token string `json:"token"`

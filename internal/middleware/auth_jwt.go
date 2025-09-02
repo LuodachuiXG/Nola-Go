@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"nola-go/internal/models/response"
 	"nola-go/internal/service"
@@ -23,6 +24,7 @@ func AuthMiddleware(tokenSvc *service.TokenService) gin.HandlerFunc {
 		// 解析并验证
 		claims, err := tokenSvc.ParseAndValidate(tokenStr)
 		if err != nil {
+			log.Println(err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, response.Unauthorized())
 			return
 		}

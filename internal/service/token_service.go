@@ -25,7 +25,8 @@ func NewTokenService(config config.JWTConfig) *TokenService {
 		secret:   config.Secret,
 		issuer:   config.Issuer,
 		audience: config.Audience,
-		expires:  config.ExpireMinutes,
+		// 分钟
+		expires:  time.Minute * config.ExpireMinutes,
 		tokenMap: make(map[uint]string),
 	}
 }

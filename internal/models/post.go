@@ -18,7 +18,7 @@ type Post struct {
 	Slug string `gorm:"column:slug;size:128;uniqueIndex;not null" json:"slug"`
 
 	// Cover 封面
-	Cover *string `gorm:"column:cover;size:512" json:"cover,omitempty"`
+	Cover *string `gorm:"column:cover;size:512" json:"cover"`
 
 	// AllowComment 是否允许评论
 	AllowComment bool `gorm:"column:allow_comment;not null" json:"allowComment"`
@@ -33,7 +33,7 @@ type Post struct {
 	Visible PostVisible `gorm:"column:visible;type:varchar(24);not null" json:"visible"`
 
 	// Password 密码
-	Password *string `gorm:"column:password;size:64" json:"password,omitempty"`
+	Password *string `gorm:"column:password;size:64" json:"password"`
 
 	// Visit 访问量
 	Visit uint `gorm:"column:visit;default:0;not null" json:"visit"`

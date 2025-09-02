@@ -2,9 +2,10 @@ package app
 
 import (
 	"fmt"
-	"log"
 	"nola-go/internal/config"
 	"nola-go/internal/db"
+	"nola-go/internal/logger"
+	"nola-go/internal/middleware"
 	"nola-go/internal/repository"
 	"nola-go/internal/router"
 	"nola-go/internal/service"
@@ -30,6 +31,12 @@ type Nola struct {
 func NewNola() (*Nola, error) {
 	a := &Nola{}
 
+	// 初始化日志组件 Zap
+	zap := logger.InitLogger()
+	defer func() {
+		_ = zap.Sync()
+	}()
+
 	// 读取配置文件
 	cfg, err := config.Load()
 	if err != nil {
@@ -39,7 +46,6 @@ func NewNola() (*Nola, error) {
 
 	// 初始化 MySQL
 	database, err := db.ConnectMySQL(cfg)
-	log.Println(cfg.MySQL.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("连接 MySQL 失败: %w", err)
 	}
@@ -61,7 +67,11 @@ func NewNola() (*Nola, error) {
 	a.UserService = service.NewUserService(a.UserRepo, a.TokenService)
 	a.PostService = service.NewPostService(a.PostRepo)
 
-	r := gin.Default()
+	r := gin.New()
+
+	// 替换 Gin 默认日志组件
+	r.Use(middleware.ZapLogger(zap), middleware.ZapRecovery(zap, true))
+
 	// 设置路由
 	router.SetupRouters(r, &router.Deps{
 		TokenService: a.TokenService,

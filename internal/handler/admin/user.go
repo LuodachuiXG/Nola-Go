@@ -1,7 +1,7 @@
-package handler
+package admin
 
 import (
-	"net/http"
+	"nola-go/internal/middleware"
 	"nola-go/internal/models/response"
 	"nola-go/internal/service"
 
@@ -10,37 +10,78 @@ import (
 
 // UserAdminHandler 用户后端接口 Handler
 type UserAdminHandler struct {
-	userService *service.UserService
+	userService  *service.UserService
+	tokenService *service.TokenService
 }
 
 // NewUserAdminHandler 新建用户后端 Handler
-func NewUserAdminHandler(s *service.UserService) *UserAdminHandler {
-	return &UserAdminHandler{userService: s}
+func NewUserAdminHandler(s *service.UserService, tsv *service.TokenService) *UserAdminHandler {
+	return &UserAdminHandler{userService: s, tokenService: tsv}
 }
 
 // RegisterAdmin 注册后端路由
 func (h *UserAdminHandler) RegisterAdmin(r *gin.RouterGroup) {
-	r.POST("/user", h.createUser)
-	r.GET("/users/:id", h.getUser)
+	// 需要鉴权接口
+	privateGroup := r.Group("/user")
+	privateGroup.Use(middleware.AuthMiddleware(h.tokenService))
+	{
+		// 验证登录是否过期
+		privateGroup.GET("/validate", func(c *gin.Context) {
+			response.OkAndResponse(c, true)
+		})
+
+		// 获取登录用户信息
+		privateGroup.GET("", h.getLoginUser)
+	}
+
+	// 无需鉴权接口
+	publicGroup := r.Group("/user")
+	{
+		// 用户登录
+		publicGroup.POST("/login", h.loginUser)
+	}
 }
 
-func (h *UserAdminHandler) createUser(c *gin.Context) {}
+// getLoginUser 获取登录用户的信息
+func (h *UserAdminHandler) getLoginUser(c *gin.Context) {
+	value, exists := c.Get("uid")
+	if !exists {
+		response.FailAndResponse(c, "未知用户")
+		return
+	}
 
-func (h *UserAdminHandler) getUser(c *gin.Context) {}
+	userId, ret := value.(uint)
+	if !ret {
+		response.FailAndResponse(c, "未知用户")
+		return
+	}
 
-// UserApiHandler 用户博客接口 Handler
-type UserApiHandler struct {
-	userService *service.UserService
+	user, err := h.userService.UserById(c, userId)
+	if err != nil {
+		response.FailAndResponse(c, err.Error())
+		return
+	}
+
+	response.OkAndResponse(c, user)
 }
 
-// NewUserApiHandler 新建用户博客 Handler
-func NewUserApiHandler(s *service.UserService) *UserApiHandler {
-	return &UserApiHandler{userService: s}
-}
+// loginUser 用户登录
+func (h *UserAdminHandler) loginUser(c *gin.Context) {
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
 
-// RegisterApi 注解博客路由
-func (h *UserApiHandler) RegisterApi(r *gin.RouterGroup) {
-	r.GET("/user", func(ctx *gin.Context) {
-		ctx.JSON(http.StatusConflict, response.OK("Hello"))
-	})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ParamMismatch(c)
+		return
+	}
+
+	res, err := h.userService.Login(c, req.Username, req.Password)
+	if err != nil {
+		response.FailAndResponse(c, err.Error())
+		return
+	}
+
+	response.OkAndResponse(c, res)
 }

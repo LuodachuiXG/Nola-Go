@@ -3,12 +3,14 @@ package response
 import (
 	"net/http"
 	"nola-go/internal/util"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Response 响应结构体
 type Response struct {
 	Code   int     `json:"code"`
-	ErrMsg *string `json:"errMsg,omitempty"`
+	ErrMsg *string `json:"errMsg"`
 	Data   any     `json:"data"`
 }
 
@@ -21,6 +23,11 @@ func OK(data any) Response {
 	}
 }
 
+// OkAndResponse 成功并直接返回成功响应体
+func OkAndResponse(ctx *gin.Context, data any) {
+	ctx.JSON(http.StatusOK, OK(data))
+}
+
 // Fail 失败响应体
 func Fail(errMsg string) Response {
 	return Response{
@@ -30,9 +37,14 @@ func Fail(errMsg string) Response {
 	}
 }
 
-// ParamMismatch 请求参数不匹配响应体
-func ParamMismatch() Response {
-	return Fail("请求参数不匹配")
+// FailAndResponse 失败并直接返回失败响应体
+func FailAndResponse(ctx *gin.Context, errMsg string) {
+	ctx.JSON(http.StatusConflict, Fail(errMsg))
+}
+
+// ParamMismatch 请求参数不匹配响应
+func ParamMismatch(ctx *gin.Context) {
+	FailAndResponse(ctx, "请求参数不匹配")
 }
 
 // Unauthorized 未授权响应体

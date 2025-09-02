@@ -21,16 +21,16 @@ type User struct {
 	Salt string `gorm:"column:salt;size:128;not null" json:"-"`
 
 	// Description 描述
-	Description *string `gorm:"column:description;size:1024" json:"description,omitempty"`
+	Description *string `gorm:"column:description;size:1024" json:"description"`
 
 	// CreateDate 注册日期
 	CreateDate int64 `gorm:"column:create_date;not null" json:"createDate"`
 
 	// LastLoginDate 最后登录日期
-	LastLoginDate *int64 `gorm:"column:last_login_time;not null" json:"lastLoginDate,omitempty"`
+	LastLoginDate *int64 `gorm:"column:last_login_time;not null" json:"lastLoginDate"`
 
 	// Avatar 头像地址
-	Avatar *string `gorm:"column:avatar;size:512" json:"avatar,omitempty"`
+	Avatar *string `gorm:"column:avatar;size:512" json:"avatar"`
 }
 
 func (User) TableName() string {

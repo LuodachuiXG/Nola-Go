@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"nola-go/internal/models"
 	"nola-go/internal/models/response"
 	"nola-go/internal/repository"
 	"nola-go/internal/util"
@@ -27,13 +28,14 @@ func NewUserService(userRepo repository.UserRepository, tokenService *TokenServi
 //   - ip: 请求的 IP 地址
 func (s *UserService) Login(
 	ctx context.Context,
-	username, password, ip string,
+	username, password string,
 ) (*response.AuthResponse, error) {
+
 	// 查询用户
 	user, err := s.userRepo.GetByUsername(ctx, username)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.New("非法用户名或密码")
 	}
 
 	if user == nil {
@@ -65,4 +67,14 @@ func (s *UserService) Login(
 		Avatar:        user.Avatar,
 		Token:         token,
 	}, nil
+}
+
+// UserById 根据用户 ID 获取用户
+func (s *UserService) UserById(ctx context.Context, userId uint) (*models.User, error) {
+	return nil, nil
+}
+
+// UserByUsername 根据用户名获取用户
+func (s *UserService) UserByUsername(ctx context.Context, username string) (*models.User, error) {
+	return nil, nil
 }
