@@ -16,7 +16,7 @@ type SaltedHash struct {
 // GenerateSaltedHash 生成加盐哈希
 //
 //   - value: 待哈希的原始字符串数据
-//   - saltBytes: 盐的字节长度
+//   - saltBytes: 盐的字节长度（默认 32）
 func GenerateSaltedHash(value string, saltBytes int) (*SaltedHash, error) {
 	if saltBytes <= 0 {
 		return nil, fmt.Errorf("saltBytes must be > 0")

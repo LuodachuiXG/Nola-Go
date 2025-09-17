@@ -55,3 +55,8 @@ func Unauthorized() Response {
 		ErrMsg: util.StringPtr("无权访问受保护资源"),
 	}
 }
+
+// UnauthorizedAndResponse 未授权并直接返回失败响应体
+func UnauthorizedAndResponse(ctx *gin.Context) {
+	ctx.JSON(http.StatusUnauthorized, Unauthorized())
+}

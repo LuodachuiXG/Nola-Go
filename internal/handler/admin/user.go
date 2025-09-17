@@ -2,6 +2,7 @@ package admin
 
 import (
 	"nola-go/internal/middleware"
+	"nola-go/internal/models/request"
 	"nola-go/internal/models/response"
 	"nola-go/internal/service"
 
@@ -29,9 +30,13 @@ func (h *UserAdminHandler) RegisterAdmin(r *gin.RouterGroup) {
 		privateGroup.GET("/validate", func(c *gin.Context) {
 			response.OkAndResponse(c, true)
 		})
-
 		// 获取登录用户信息
 		privateGroup.GET("", h.getLoginUser)
+		// 修改登录用户信息
+		privateGroup.PUT("", h.updateUser)
+		// 修改密码
+		privateGroup.PUT("/password", h.updatePassword)
+
 	}
 
 	// 无需鉴权接口
@@ -44,15 +49,10 @@ func (h *UserAdminHandler) RegisterAdmin(r *gin.RouterGroup) {
 
 // getLoginUser 获取登录用户的信息
 func (h *UserAdminHandler) getLoginUser(c *gin.Context) {
-	value, exists := c.Get("uid")
-	if !exists {
-		response.FailAndResponse(c, "未知用户")
-		return
-	}
+	userId := c.GetUint("uid")
 
-	userId, ret := value.(uint)
-	if !ret {
-		response.FailAndResponse(c, "未知用户")
+	if userId == 0 {
+		response.UnauthorizedAndResponse(c)
 		return
 	}
 
@@ -65,11 +65,62 @@ func (h *UserAdminHandler) getLoginUser(c *gin.Context) {
 	response.OkAndResponse(c, user)
 }
 
+// updateUser 修改登录用户信息
+func (h *UserAdminHandler) updateUser(c *gin.Context) {
+	userId := c.GetUint("uid")
+
+	if userId == 0 {
+		response.UnauthorizedAndResponse(c)
+		return
+	}
+
+	var req request.UserInfoRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ParamMismatch(c)
+		return
+	}
+
+	res, err := h.userService.UpdateUser(c, userId, &req)
+	if err != nil {
+		response.FailAndResponse(c, err.Error())
+		return
+	}
+	response.OkAndResponse(c, res)
+}
+
+// updatePassword 修改密码
+func (h *UserAdminHandler) updatePassword(c *gin.Context) {
+	userId := c.GetUint("uid")
+
+	if userId == 0 {
+		response.UnauthorizedAndResponse(c)
+		return
+	}
+
+	var req struct {
+		Password string `json:"password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ParamMismatch(c)
+		return
+	}
+
+	res, err := h.userService.UpdatePassword(c, userId, req.Password)
+
+	if err != nil {
+		response.FailAndResponse(c, err.Error())
+		return
+	}
+
+	response.OkAndResponse(c, res)
+}
+
 // loginUser 用户登录
 func (h *UserAdminHandler) loginUser(c *gin.Context) {
 	var req struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
