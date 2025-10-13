@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// UserRepository 用户 Repo 接口
 type UserRepository interface {
 	// Create 创建用户
 	Create(ctx context.Context, u *models.User) error
@@ -28,6 +29,7 @@ type userRepo struct {
 	db *gorm.DB
 }
 
+// NewUserRepository 创建用户 Repo
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepo{db: db}
 }

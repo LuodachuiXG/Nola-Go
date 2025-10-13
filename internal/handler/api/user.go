@@ -17,7 +17,7 @@ func NewUserApiHandler(s *service.UserService) *UserApiHandler {
 	return &UserApiHandler{userService: s}
 }
 
-// RegisterApi 注解博客路由
+// RegisterApi 注册用户博客路由
 func (h *UserApiHandler) RegisterApi(r *gin.RouterGroup) {
 	// 获取博主信息
 	r.GET("/blogger", h.getBloggerInfo)

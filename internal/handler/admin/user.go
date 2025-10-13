@@ -20,7 +20,7 @@ func NewUserAdminHandler(s *service.UserService, tsv *service.TokenService) *Use
 	return &UserAdminHandler{userService: s, tokenService: tsv}
 }
 
-// RegisterAdmin 注册后端路由
+// RegisterAdmin 注册用户后端路由
 func (h *UserAdminHandler) RegisterAdmin(r *gin.RouterGroup) {
 	// 需要鉴权接口
 	privateGroup := r.Group("/user")

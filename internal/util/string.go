@@ -2,9 +2,13 @@ package util
 
 import "regexp"
 
-// StringPtr 返回一个指向字符串的指针
-func StringPtr(s string) *string {
-	return &s
+// StringDefault 返回字符串或者默认值
+// 如果字符串为 nil，则返回默认值
+func StringDefault(s *string, defaultValue string) string {
+	if s == nil {
+		return defaultValue
+	}
+	return *s
 }
 
 // StringIsEmail 判断一个字符串是否为邮箱

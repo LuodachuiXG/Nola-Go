@@ -9,9 +9,10 @@ import (
 )
 
 type Deps struct {
-	TokenService *service.TokenService
-	UserService  *service.UserService
-	PostService  *service.PostService
+	TokenService  *service.TokenService
+	UserService   *service.UserService
+	PostService   *service.PostService
+	ConfigService *service.ConfigService
 }
 
 // SetupRouters 初始化 Gin 路由
@@ -25,6 +26,10 @@ func SetupRouters(r *gin.Engine, deps *Deps) *gin.Engine {
 		// 用户接口
 		userHandler := admin.NewUserAdminHandler(deps.UserService, deps.TokenService)
 		userHandler.RegisterAdmin(adminHandler)
+
+		// 配置接口
+		configHandler := admin.NewConfigAdminHandler(deps.ConfigService, deps.UserService, deps.TokenService)
+		configHandler.RegisterAdmin(adminHandler)
 	}
 
 	// 博客接口（无需登录）
@@ -33,6 +38,10 @@ func SetupRouters(r *gin.Engine, deps *Deps) *gin.Engine {
 		// 用户接口
 		userHandler := api.NewUserApiHandler(deps.UserService)
 		userHandler.RegisterApi(apiHandler)
+
+		// 配置接口
+		configHandler := api.NewConfigApiHandler(deps.ConfigService, deps.UserService)
+		configHandler.RegisterApi(apiHandler)
 	}
 
 	return r

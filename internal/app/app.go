@@ -16,15 +16,17 @@ import (
 )
 
 type Nola struct {
-	Config       *config.Config
-	DB           *gorm.DB
-	Redis        *redis.Client
-	UserRepo     repository.UserRepository
-	PostRepo     repository.PostRepository
-	TokenService *service.TokenService
-	UserService  *service.UserService
-	PostService  *service.PostService
-	Engine       *gin.Engine
+	Config        *config.Config
+	DB            *gorm.DB
+	Redis         *redis.Client
+	UserRepo      repository.UserRepository
+	PostRepo      repository.PostRepository
+	ConfigRepo    repository.ConfigRepository
+	TokenService  *service.TokenService
+	UserService   *service.UserService
+	PostService   *service.PostService
+	ConfigService *service.ConfigService
+	Engine        *gin.Engine
 }
 
 // NewNola 创建 Nola 实例
@@ -61,11 +63,13 @@ func NewNola() (*Nola, error) {
 	// Repository
 	a.UserRepo = repository.NewUserRepository(a.DB)
 	a.PostRepo = repository.NewPostRepository(a.DB)
+	a.ConfigRepo = repository.NewConfigRepository(a.DB)
 
 	// Service
 	a.TokenService = service.NewTokenService(a.Config.JWT)
 	a.UserService = service.NewUserService(a.UserRepo, a.TokenService)
 	a.PostService = service.NewPostService(a.PostRepo)
+	a.ConfigService = service.NewConfigService(a.ConfigRepo)
 
 	r := gin.New()
 
@@ -74,9 +78,10 @@ func NewNola() (*Nola, error) {
 
 	// 设置路由
 	router.SetupRouters(r, &router.Deps{
-		TokenService: a.TokenService,
-		UserService:  a.UserService,
-		PostService:  a.PostService,
+		TokenService:  a.TokenService,
+		UserService:   a.UserService,
+		PostService:   a.PostService,
+		ConfigService: a.ConfigService,
 	})
 
 	// 只信任 本机代理

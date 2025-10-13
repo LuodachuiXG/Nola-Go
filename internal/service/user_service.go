@@ -10,6 +10,7 @@ import (
 	"nola-go/internal/repository"
 	"nola-go/internal/util"
 
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -56,7 +57,7 @@ func (s *UserService) Login(
 	// 生成 Token
 	token, err := s.tokenService.Generate(user.UserId, user.Username, nil)
 	if err != nil {
-		logger.Logger.Error(err.Error())
+		logger.Log.Error(err.Error())
 		return nil, response.ServerError
 	}
 
@@ -87,7 +88,7 @@ func (s *UserService) UpdateUser(ctx context.Context, userId uint, userInfo *req
 
 	ret, err := s.userRepo.UpdateUser(ctx, userId, userInfo)
 	if err != nil {
-		logger.Logger.Error(err.Error())
+		logger.Log.Error("更新用户错误", zap.Error(err))
 		return false, response.ServerError
 	}
 
@@ -110,13 +111,13 @@ func (s *UserService) UpdatePassword(ctx context.Context, userId uint, password 
 	hash, err := util.GenerateSaltedHash(password, 32)
 
 	if err != nil {
-		logger.Logger.Error("密码生成失败", zap.Error(err))
+		logger.Log.Error("密码生成失败", zap.Error(err))
 		return false, response.ServerError
 	}
 
 	ret, err := s.userRepo.UpdatePassword(ctx, userId, hash)
 	if err != nil {
-		logger.Logger.Error(err.Error())
+		logger.Log.Error("修改密码失败", zap.Error(err))
 		return false, response.ServerError
 	}
 
@@ -126,13 +127,21 @@ func (s *UserService) UpdatePassword(ctx context.Context, userId uint, password 
 // UserById 根据用户 ID 获取用户
 func (s *UserService) UserById(ctx context.Context, userId uint) (*models.User, error) {
 	user, err := s.userRepo.GetById(ctx, userId)
-	return user, err
+	if err != nil {
+		logger.Log.Error("获取用户失败 - ID", zap.Error(err))
+		return nil, response.ServerError
+	}
+	return user, nil
 }
 
 // UserByUsername 根据用户名获取用户
 func (s *UserService) UserByUsername(ctx context.Context, username string) (*models.User, error) {
 	user, err := s.userRepo.GetByUsername(ctx, username)
-	return user, err
+	if err != nil {
+		logger.Log.Error("获取用户失败 - Username", zap.Error(err))
+		return nil, response.ServerError
+	}
+	return user, nil
 }
 
 // AllUsers 获取所有用户
@@ -140,9 +149,57 @@ func (s *UserService) AllUsers(ctx context.Context) ([]*models.User, error) {
 	users, err := s.userRepo.GetAllUsers(ctx)
 
 	if err != nil {
-		logger.Logger.Error(err.Error())
+		logger.Log.Error("获取所有用户失败", zap.Error(err))
 		return nil, response.ServerError
 	}
 
 	return users, nil
+}
+
+// InitAdmin 初始化博客管理员
+func (s *UserService) InitAdmin(c *gin.Context, u *models.User) (bool, error) {
+	users, err := s.AllUsers(c)
+	if err != nil {
+		return false, err
+	}
+
+	if len(users) > 0 {
+		return false, errors.New("管理员已经创建")
+	}
+
+	if !util.StringIsNumberAndChar(u.Username) {
+		return false, errors.New("用户名只支持英文和数字")
+	}
+
+	if len(u.Username) < 4 {
+		return false, errors.New("用户名不能小于 4 位")
+	}
+
+	if !util.StringIsEmail(u.Email) {
+		return false, errors.New("邮箱格式错误")
+	}
+
+	if len(u.Password) < 8 {
+		return false, errors.New("密码长度不能小于 8 位")
+	}
+
+	// 对密码生成加盐哈希
+	hash, err := util.GenerateSaltedHash(u.Password, 32)
+	if err != nil {
+		logger.Log.Error("密码生成失败", zap.Error(err))
+		return false, response.ServerError
+	}
+	u.Password = hash.Hash
+	u.Salt = hash.Salt
+
+	// 添加用户
+	err = s.userRepo.Create(c, u)
+	if err != nil {
+		logger.Log.Error("添加用户失败", zap.Error(err))
+		return false, response.ServerError
+	}
+
+	// TODO("如果没有文章和菜单话添加默认初始文章和菜单")
+
+	return true, nil
 }
