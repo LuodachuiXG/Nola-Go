@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"nola-go/internal/models"
 
 	"gorm.io/gorm"
@@ -61,7 +62,13 @@ func (r *configRepo) UpdateConfig(ctx context.Context, config *models.Config) (b
 func (r *configRepo) Config(ctx context.Context, key models.ConfigKey) (*string, error) {
 	var config models.Config
 	err := r.db.WithContext(ctx).Where("`key` = ?", key).First(&config).Error
+
 	if err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+
 		return nil, err
 	}
 	return &config.Value, nil

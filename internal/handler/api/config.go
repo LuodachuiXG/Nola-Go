@@ -43,7 +43,7 @@ func (h *ConfigApiHandler) getBlogInfo(c *gin.Context) {
 	// 获取博主信息
 	users, err := h.userService.AllUsers(c)
 
-	if len(users) != 0 {
+	if len(users) != 0 && blogInfo != nil {
 		// 博主数量不为空，填充博主名称
 		blogInfo.Blogger = &users[0].DisplayName
 	}

@@ -101,6 +101,10 @@ func (s *ConfigService) BlogInfo(ctx context.Context) (*models.BlogInfo, error) 
 		return nil, err
 	}
 
+	if config == nil {
+		return nil, nil
+	}
+
 	if err := util.FromJsonString(config, blogInfo); err != nil {
 		logger.Log.Error("解析博客信息失败", zap.Error(err))
 		return nil, response.ServerError
@@ -129,6 +133,10 @@ func (s *ConfigService) ICPFiling(ctx context.Context) (*models.ICPFiling, error
 	config, err := s.Config(ctx, models.ConfigKeyICPFiling)
 	if err != nil {
 		return nil, err
+	}
+
+	if config == nil {
+		return nil, nil
 	}
 
 	if err := util.FromJsonString(config, icp); err != nil {
