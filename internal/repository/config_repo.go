@@ -64,7 +64,6 @@ func (r *configRepo) Config(ctx context.Context, key models.ConfigKey) (*string,
 	err := r.db.WithContext(ctx).Where("`key` = ?", key).First(&config).Error
 
 	if err != nil {
-
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}

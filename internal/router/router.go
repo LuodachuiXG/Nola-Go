@@ -13,6 +13,7 @@ type Deps struct {
 	UserService   *service.UserService
 	PostService   *service.PostService
 	ConfigService *service.ConfigService
+	TagService    *service.TagService
 }
 
 // SetupRouters 初始化 Gin 路由
@@ -30,6 +31,10 @@ func SetupRouters(r *gin.Engine, deps *Deps) *gin.Engine {
 		// 配置接口
 		configHandler := admin.NewConfigAdminHandler(deps.ConfigService, deps.UserService, deps.TokenService)
 		configHandler.RegisterAdmin(adminHandler)
+
+		// 标签接口
+		tagHandler := admin.NewTagAdminHandler(deps.TagService, deps.TokenService)
+		tagHandler.RegisterAdmin(adminHandler)
 	}
 
 	// 博客接口（无需登录）

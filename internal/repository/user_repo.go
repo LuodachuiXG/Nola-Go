@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"nola-go/internal/models"
 	"nola-go/internal/models/request"
 	"nola-go/internal/util"
@@ -64,6 +65,9 @@ func (r *userRepo) UpdatePassword(ctx context.Context, userId uint, hash *util.S
 func (r *userRepo) GetByUsername(ctx context.Context, username string) (*models.User, error) {
 	var u models.User
 	if err := r.db.WithContext(ctx).Where("username = ?", username).First(&u).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &u, nil
@@ -73,6 +77,9 @@ func (r *userRepo) GetByUsername(ctx context.Context, username string) (*models.
 func (r *userRepo) GetById(ctx context.Context, userId uint) (*models.User, error) {
 	var u models.User
 	if err := r.db.WithContext(ctx).Where("user_id = ?", userId).First(&u).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &u, nil

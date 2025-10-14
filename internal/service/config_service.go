@@ -11,12 +11,12 @@ import (
 	"go.uber.org/zap"
 )
 
-// ConfigService 配置服务
+// ConfigService 配置 Service
 type ConfigService struct {
 	configRepo repository.ConfigRepository
 }
 
-// NewConfigService 创建配置服务
+// NewConfigService 创建配置 Service
 func NewConfigService(configRepo repository.ConfigRepository) *ConfigService {
 	return &ConfigService{
 		configRepo: configRepo,
