@@ -47,6 +47,10 @@ func SetupRouters(r *gin.Engine, deps *Deps) *gin.Engine {
 		// 配置接口
 		configHandler := api.NewConfigApiHandler(deps.ConfigService, deps.UserService)
 		configHandler.RegisterApi(apiHandler)
+
+		// 标签接口
+		tagHandler := api.NewTagApiHandler(deps.TagService)
+		tagHandler.RegisterApi(apiHandler)
 	}
 
 	return r

@@ -52,7 +52,7 @@ func PagerBuilder[T any](
 	totalPages := int64(math.Ceil(float64(totalData) / float64(size)))
 
 	// 查询当前页数据
-	var data []T
+	var data []*T
 	if err := queryDB.WithContext(ctx).Limit(size).Offset(offset).Scan(&data).Error; err != nil {
 		return nil, err
 	}

@@ -10,6 +10,11 @@ func Int64Ptr(i int64) *int64 {
 	return &i
 }
 
+// IntPtr 返回一个指向 int 的指针
+func IntPtr(i int) *int {
+	return &i
+}
+
 // UintPrt 返回一个指向 uint 的指针
 func UintPrt(i uint) *uint {
 	return &i

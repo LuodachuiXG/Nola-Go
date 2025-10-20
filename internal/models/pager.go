@@ -7,7 +7,7 @@ type Pager[T any] struct {
 	// Size 每页条数
 	Size int `json:"size"`
 	// Data 数据数组
-	Data []T `json:"data"`
+	Data []*T `json:"data"`
 	// TotalData 总条数
 	TotalData int64 `json:"totalData"`
 	// TotalPages 总页数
