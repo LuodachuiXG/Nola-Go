@@ -42,13 +42,15 @@ func (r *userRepo) Create(ctx context.Context, u *models.User) error {
 
 // UpdateUser 更新用户信息
 func (r *userRepo) UpdateUser(ctx context.Context, userId uint, userInfo *request.UserInfoRequest) (bool, error) {
-	ret := r.db.WithContext(ctx).Model(&models.User{}).Where("user_id = ?", userId).Updates(models.User{
-		Avatar:      userInfo.Avatar,
-		Description: userInfo.Description,
-		DisplayName: userInfo.DisplayName,
-		Email:       userInfo.Email,
-		Username:    userInfo.Username,
-	})
+	updates := map[string]any{
+		"avatar":       userInfo.Avatar,
+		"description":  userInfo.Description,
+		"display_name": userInfo.DisplayName,
+		"email":        userInfo.Email,
+		"username":     userInfo.Username,
+	}
+
+	ret := r.db.WithContext(ctx).Model(&models.User{}).Where("user_id = ?", userId).Model(&models.User{}).Updates(updates)
 	return ret.RowsAffected > 0, ret.Error
 }
 

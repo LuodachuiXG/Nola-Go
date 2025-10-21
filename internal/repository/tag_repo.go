@@ -132,7 +132,14 @@ func (r *tagRepo) UpdateTag(ctx context.Context, tag *models.Tag) (bool, error) 
 	if util.StringIsNilOrBlank(tag.Color) {
 		tag.Color = nil
 	}
-	err := r.db.WithContext(ctx).Where("`tag_id` = ?", tag.TagId).Updates(tag).Error
+
+	updates := map[string]any{
+		"display_name": tag.DisplayName,
+		"slug":         tag.Slug,
+		"color":        tag.Color,
+	}
+
+	err := r.db.WithContext(ctx).Where("`tag_id` = ?", tag.TagId).Model(&models.Tag{}).Updates(updates).Error
 	if err != nil {
 		return false, err
 	}

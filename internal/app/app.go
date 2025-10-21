@@ -16,19 +16,21 @@ import (
 )
 
 type Nola struct {
-	Config        *config.Config
-	DB            *gorm.DB
-	Redis         *redis.Client
-	UserRepo      repository.UserRepository
-	PostRepo      repository.PostRepository
-	ConfigRepo    repository.ConfigRepository
-	TagRepo       repository.TagRepository
-	TokenService  *service.TokenService
-	UserService   *service.UserService
-	PostService   *service.PostService
-	ConfigService *service.ConfigService
-	TagService    *service.TagService
-	Engine        *gin.Engine
+	Config          *config.Config
+	DB              *gorm.DB
+	Redis           *redis.Client
+	UserRepo        repository.UserRepository
+	PostRepo        repository.PostRepository
+	ConfigRepo      repository.ConfigRepository
+	TagRepo         repository.TagRepository
+	CategoryRepo    repository.CategoryRepository
+	TokenService    *service.TokenService
+	UserService     *service.UserService
+	PostService     *service.PostService
+	ConfigService   *service.ConfigService
+	TagService      *service.TagService
+	CategoryService *service.CategoryService
+	Engine          *gin.Engine
 }
 
 // NewNola 创建 Nola 实例
@@ -67,6 +69,7 @@ func NewNola() (*Nola, error) {
 	a.PostRepo = repository.NewPostRepository(a.DB)
 	a.ConfigRepo = repository.NewConfigRepository(a.DB)
 	a.TagRepo = repository.NewTagRepository(a.DB)
+	a.CategoryRepo = repository.NewCategoryRepository(a.DB)
 
 	// Service
 	a.TokenService = service.NewTokenService(a.Config.JWT)
@@ -74,6 +77,7 @@ func NewNola() (*Nola, error) {
 	a.PostService = service.NewPostService(a.PostRepo)
 	a.ConfigService = service.NewConfigService(a.ConfigRepo)
 	a.TagService = service.NewTagService(a.TagRepo)
+	a.CategoryService = service.NewCategoryService(a.CategoryRepo)
 
 	r := gin.New()
 
@@ -82,11 +86,12 @@ func NewNola() (*Nola, error) {
 
 	// 设置路由
 	router.SetupRouters(r, &router.Deps{
-		TokenService:  a.TokenService,
-		UserService:   a.UserService,
-		PostService:   a.PostService,
-		ConfigService: a.ConfigService,
-		TagService:    a.TagService,
+		TokenService:    a.TokenService,
+		UserService:     a.UserService,
+		PostService:     a.PostService,
+		ConfigService:   a.ConfigService,
+		TagService:      a.TagService,
+		CategoryService: a.CategoryService,
 	})
 
 	// 只信任 本机代理

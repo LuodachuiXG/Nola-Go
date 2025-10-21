@@ -82,6 +82,11 @@ func (h *TagAdminHandler) deleteTagByIds(c *gin.Context) {
 		return
 	}
 
+	if len(ids) == 0 {
+		response.OkAndResponse(c, false)
+		return
+	}
+
 	// 删除标签
 	ret, err := h.tagService.DeleteTags(c, ids)
 

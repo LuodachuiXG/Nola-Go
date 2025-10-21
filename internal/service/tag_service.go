@@ -17,9 +17,9 @@ type TagService struct {
 }
 
 // NewTagService 创建标签 Service
-func NewTagService(configRepo repository.TagRepository) *TagService {
+func NewTagService(tagRepo repository.TagRepository) *TagService {
 	return &TagService{
-		tagRepo: configRepo,
+		tagRepo: tagRepo,
 	}
 }
 
