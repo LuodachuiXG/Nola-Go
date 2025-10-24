@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"nola-go/internal/logger"
 	"nola-go/internal/models"
@@ -204,7 +205,7 @@ func (s *TagService) isSlugExist(c *gin.Context, slug string, tagId *uint) (bool
 //
 // Returns:
 //   - []*models.Tag: 如果标签都存在返回空数组，否则返回不存在的 ID 数组
-func (s *TagService) isIdsExist(c *gin.Context, tagIds []uint) ([]uint, error) {
+func (s *TagService) isIdsExist(c context.Context, tagIds []uint) ([]uint, error) {
 	tags, err := s.tagRepo.TagByIds(c, tagIds)
 	if err != nil {
 		logger.Log.Error("获取标签失败", zap.Error(err))

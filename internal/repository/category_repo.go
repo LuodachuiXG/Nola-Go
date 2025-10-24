@@ -23,7 +23,7 @@ type CategoryRepository interface {
 	// Categories 获取所有分类
 	Categories(ctx context.Context) ([]*models.Category, error)
 	// CategoryByPostId 获取分类 - 文章 ID
-	CategoryByPostId(ctx context.Context, postId uint) ([]*models.Category, error)
+	CategoryByPostId(ctx context.Context, postId uint) (*models.Category, error)
 	// CategoriesPager 分页获取所有分类
 	CategoriesPager(ctx context.Context, page, size int) (*models.Pager[models.Category], error)
 	// TopCategories 获取文章数量最多的 6 个分类
@@ -173,13 +173,13 @@ func (r *categoryRepo) TopCategories(ctx context.Context) ([]*models.Category, e
 }
 
 // CategoryByPostId 获取分类 - 文章 ID
-func (r *categoryRepo) CategoryByPostId(ctx context.Context, postId uint) ([]*models.Category, error) {
-	var categories []*models.Category
-	err := r.sqlSelectCategory().WithContext(ctx).Where("pc.post_id = ?", postId).Scan(&categories).Error
+func (r *categoryRepo) CategoryByPostId(ctx context.Context, postId uint) (*models.Category, error) {
+	var category *models.Category
+	err := r.sqlSelectCategory().WithContext(ctx).Where("pc.post_id = ?", postId).First(&category).Error
 	if err != nil {
 		return nil, err
 	}
-	return categories, nil
+	return category, nil
 }
 
 // CategoryById 获取分类 - ID

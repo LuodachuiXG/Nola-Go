@@ -1,5 +1,7 @@
 package models
 
+import "nola-go/internal/models/enum"
+
 // Post 文章
 type Post struct {
 	// PostId 文章 ID
@@ -27,10 +29,10 @@ type Post struct {
 	Pinned bool `gorm:"column:pinned;not null" json:"pinned"`
 
 	// Status 状态
-	Status PostStatus `gorm:"column:status;type:varchar(24);not null" json:"status"`
+	Status enum.PostStatus `gorm:"column:status;type:varchar(24);not null" json:"status"`
 
 	// Visible 可见性
-	Visible PostVisible `gorm:"column:visible;type:varchar(24);not null" json:"visible"`
+	Visible enum.PostVisible `gorm:"column:visible;type:varchar(24);not null" json:"visible"`
 
 	// Password 密码
 	Password *string `gorm:"column:password;size:64" json:"password"`
@@ -48,28 +50,3 @@ type Post struct {
 func (Post) TableName() string {
 	return "post"
 }
-
-// PostStatus 文章状态
-type PostStatus string
-
-const (
-	// PostPublished 已发布
-	PostPublished PostStatus = "PUBLISHED"
-
-	// PostDraft 草稿
-	PostDraft PostStatus = "DRAFT"
-
-	// PostDeleted 已删除（回收站）
-	PostDeleted PostStatus = "DELETED"
-)
-
-// PostVisible 文章可见性
-type PostVisible string
-
-const (
-	// Visible 可见
-	Visible PostVisible = "VISIBLE"
-
-	// Hidden 隐藏
-	Hidden PostVisible = "HIDDEN"
-)

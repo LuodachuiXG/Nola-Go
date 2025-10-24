@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"nola-go/internal/logger"
 	"nola-go/internal/models"
@@ -154,7 +155,7 @@ func (s *CategoryService) TopCategories(c *gin.Context) ([]*models.Category, err
 }
 
 // CategoryById 根据分类 ID 获取分类
-func (s *CategoryService) CategoryById(c *gin.Context, id uint) (*models.Category, error) {
+func (s *CategoryService) CategoryById(c context.Context, id uint) (*models.Category, error) {
 	ret, err := s.categoryRepo.CategoryById(c, id)
 	if err != nil {
 		logger.Log.Error("获取分类失败", zap.Error(err))

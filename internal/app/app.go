@@ -66,18 +66,18 @@ func NewNola() (*Nola, error) {
 
 	// Repository
 	a.UserRepo = repository.NewUserRepository(a.DB)
-	a.PostRepo = repository.NewPostRepository(a.DB)
 	a.ConfigRepo = repository.NewConfigRepository(a.DB)
 	a.TagRepo = repository.NewTagRepository(a.DB)
 	a.CategoryRepo = repository.NewCategoryRepository(a.DB)
+	a.PostRepo = repository.NewPostRepository(a.DB, a.TagRepo, a.CategoryRepo)
 
 	// Service
 	a.TokenService = service.NewTokenService(a.Config.JWT)
 	a.UserService = service.NewUserService(a.UserRepo, a.TokenService)
-	a.PostService = service.NewPostService(a.PostRepo)
 	a.ConfigService = service.NewConfigService(a.ConfigRepo)
 	a.TagService = service.NewTagService(a.TagRepo)
 	a.CategoryService = service.NewCategoryService(a.CategoryRepo)
+	a.PostService = service.NewPostService(a.PostRepo, a.TagService, a.CategoryService)
 
 	r := gin.New()
 

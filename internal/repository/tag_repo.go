@@ -136,7 +136,7 @@ func (r *tagRepo) UpdateTag(ctx context.Context, tag *models.Tag) (bool, error) 
 	updates := map[string]any{
 		"display_name": tag.DisplayName,
 		"slug":         tag.Slug,
-		"color":        tag.Color,
+		"color":        *tag.Color,
 	}
 
 	err := r.db.WithContext(ctx).Where("`tag_id` = ?", tag.TagId).Model(&models.Tag{}).Updates(updates).Error
