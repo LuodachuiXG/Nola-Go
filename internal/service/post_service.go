@@ -117,6 +117,11 @@ func (s *PostService) AddPostByNamesAndContents(ctx context.Context, names []str
 
 // DeletePosts 根据文章 ID 批量删除文章
 func (s *PostService) DeletePosts(ctx context.Context, ids []uint) (bool, error) {
+
+	if len(ids) == 0 {
+		return false, nil
+	}
+
 	posts, err := s.PostByIds(ctx, ids, false)
 
 	if err != nil {
@@ -143,6 +148,10 @@ func (s *PostService) DeletePosts(ctx context.Context, ids []uint) (bool, error)
 
 // UpdatePostStatusToDeleted 将文章状态修改为已删除（回收站）
 func (s *PostService) UpdatePostStatusToDeleted(ctx context.Context, ids []uint) (bool, error) {
+	if len(ids) == 0 {
+		return false, nil
+	}
+
 	ret, err := s.postRepo.UpdatePostStatusToDeleted(ctx, ids)
 
 	if err != nil {
@@ -155,6 +164,11 @@ func (s *PostService) UpdatePostStatusToDeleted(ctx context.Context, ids []uint)
 
 // UpdatePostStatusTo 将文章转为指定状态
 func (s *PostService) UpdatePostStatusTo(ctx context.Context, ids []uint, status enum.PostStatus) (bool, error) {
+
+	if len(ids) == 0 {
+		return false, nil
+	}
+
 	ret, err := s.postRepo.UpdatePostStatusTo(ctx, ids, status)
 
 	if err != nil {
@@ -332,6 +346,11 @@ func (s *PostService) PostById(ctx context.Context, id uint, includeTagAndCatego
 //   - ids: 文章 ID 数组
 //   - includeTagAndCategory: 是否包含标签和分类（耗时操作，非必要不包含）
 func (s *PostService) PostByIds(ctx context.Context, ids []uint, includeTagAndCategory bool) ([]*response.PostResponse, error) {
+
+	if len(ids) == 0 {
+		return []*response.PostResponse{}, nil
+	}
+
 	post, err := s.postRepo.PostByIds(ctx, ids, includeTagAndCategory)
 	if err != nil {
 		logger.Log.Error("获取文章失败", zap.Error(err))
@@ -538,29 +557,29 @@ func (s *PostService) ApiPostContent(ctx context.Context, id *uint, slug *string
 }
 
 // AddPostDraft 添加文章草稿
-func (s *PostService) AddPostDraft(ctx context.Context, id uint, content string, draftName string) (*models.PostContent, error) {
+func (s *PostService) AddPostDraft(ctx context.Context, req *request.PostDraftRequest) (*models.PostContent, error) {
 	// 先判断文章是否存在
-	exist, err := s.isPostExist(ctx, id)
+	exist, err := s.isPostExist(ctx, req.PostId)
 	if err != nil {
 		return nil, err
 	}
 
 	if !exist {
-		return nil, errors.New("文章 [" + strconv.Itoa(int(id)) + "] 不存在")
+		return nil, errors.New("文章 [" + strconv.Itoa(int(req.PostId)) + "] 不存在")
 	}
 
 	// 判断草稿名是否已存在
-	exist, err = s.isPostDraftNameExist(ctx, id, draftName)
+	exist, err = s.isPostDraftNameExist(ctx, req.PostId, req.DraftName)
 	if err != nil {
 		return nil, err
 	}
 
 	if exist {
-		return nil, errors.New("草稿名 [" + draftName + "] 已经存在")
+		return nil, errors.New("草稿名 [" + req.DraftName + "] 已经存在")
 	}
 
 	// 添加草稿
-	ret, err := s.postRepo.AddPostDraft(ctx, id, content, draftName)
+	ret, err := s.postRepo.AddPostDraft(ctx, req.PostId, req.Content, req.DraftName)
 	if err != nil {
 		logger.Log.Error("添加文章草稿失败", zap.Error(err))
 		return nil, response.ServerError

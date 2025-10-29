@@ -41,6 +41,10 @@ func SetupRouters(r *gin.Engine, deps *Deps) *gin.Engine {
 		categoryHandler := admin.NewCategoryAdminHandler(deps.CategoryService, deps.TokenService)
 		categoryHandler.RegisterAdmin(adminHandler)
 
+		// 文章接口
+		postHandler := admin.NewPostAdminHandler(deps.PostService, deps.TokenService)
+		postHandler.RegisterAdmin(adminHandler)
+
 	}
 
 	// 博客接口（无需登录）

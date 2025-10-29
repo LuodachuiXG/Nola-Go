@@ -10,7 +10,6 @@ import (
 	"nola-go/internal/repository"
 	"nola-go/internal/util"
 
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -157,7 +156,7 @@ func (s *UserService) AllUsers(ctx context.Context) ([]*models.User, error) {
 }
 
 // InitAdmin 初始化博客管理员
-func (s *UserService) InitAdmin(c *gin.Context, u *models.User) (bool, error) {
+func (s *UserService) InitAdmin(c context.Context, u *models.User) (bool, error) {
 	users, err := s.AllUsers(c)
 	if err != nil {
 		return false, err

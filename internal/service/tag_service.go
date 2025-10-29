@@ -8,7 +8,6 @@ import (
 	"nola-go/internal/models/response"
 	"nola-go/internal/repository"
 
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -25,7 +24,7 @@ func NewTagService(tagRepo repository.TagRepository) *TagService {
 }
 
 // AddTag 添加标签
-func (s *TagService) AddTag(c *gin.Context, displayName string, slug string, color *string) (*models.Tag, error) {
+func (s *TagService) AddTag(c context.Context, displayName string, slug string, color *string) (*models.Tag, error) {
 	// 先判断标签别名是否已经存在
 	exist, err := s.isSlugExist(c, slug, nil)
 	if err != nil {
@@ -52,7 +51,7 @@ func (s *TagService) AddTag(c *gin.Context, displayName string, slug string, col
 }
 
 // DeleteTags 根据标签 ID 数组删除标签
-func (s *TagService) DeleteTags(c *gin.Context, tagIds []uint) (bool, error) {
+func (s *TagService) DeleteTags(c context.Context, tagIds []uint) (bool, error) {
 	ret, err := s.tagRepo.DeleteTags(c, tagIds)
 	if err != nil {
 		logger.Log.Error("删除标签失败 - Ids", zap.Error(err))
@@ -63,7 +62,7 @@ func (s *TagService) DeleteTags(c *gin.Context, tagIds []uint) (bool, error) {
 }
 
 // DeleteTagBySlugs 根据别名数组删除标签
-func (s *TagService) DeleteTagBySlugs(c *gin.Context, slugs []string) (bool, error) {
+func (s *TagService) DeleteTagBySlugs(c context.Context, slugs []string) (bool, error) {
 	ret, err := s.tagRepo.DeleteTagBySlugs(c, slugs)
 	if err != nil {
 		logger.Log.Error("删除标签失败 - Slugs", zap.Error(err))
@@ -74,7 +73,7 @@ func (s *TagService) DeleteTagBySlugs(c *gin.Context, slugs []string) (bool, err
 }
 
 // UpdateTag 修改标签
-func (s *TagService) UpdateTag(c *gin.Context, tag *models.Tag) (bool, error) {
+func (s *TagService) UpdateTag(c context.Context, tag *models.Tag) (bool, error) {
 
 	// 先判断标签别名是否已存在
 	exist, err := s.isSlugExist(c, tag.Slug, &tag.TagId)
@@ -98,7 +97,7 @@ func (s *TagService) UpdateTag(c *gin.Context, tag *models.Tag) (bool, error) {
 }
 
 // Tags 获取所有标签
-func (s *TagService) Tags(c *gin.Context) ([]*models.Tag, error) {
+func (s *TagService) Tags(c context.Context) ([]*models.Tag, error) {
 	ret, err := s.tagRepo.Tags(c)
 
 	if err != nil {
@@ -110,7 +109,7 @@ func (s *TagService) Tags(c *gin.Context) ([]*models.Tag, error) {
 }
 
 // TopTags 获取文章数量最多的 6 个标签
-func (s *TagService) TopTags(c *gin.Context) ([]*models.Tag, error) {
+func (s *TagService) TopTags(c context.Context) ([]*models.Tag, error) {
 	ret, err := s.tagRepo.TopTags(c)
 	if err != nil {
 		logger.Log.Error("获取标签失败", zap.Error(err))
@@ -121,7 +120,7 @@ func (s *TagService) TopTags(c *gin.Context) ([]*models.Tag, error) {
 }
 
 // TagsPager 分页获取所有标签
-func (s *TagService) TagsPager(c *gin.Context, page, size int) (*models.Pager[models.Tag], error) {
+func (s *TagService) TagsPager(c context.Context, page, size int) (*models.Pager[models.Tag], error) {
 	if page == 0 {
 		// 获取所有标签
 		tags, err := s.Tags(c)
@@ -147,7 +146,7 @@ func (s *TagService) TagsPager(c *gin.Context, page, size int) (*models.Pager[mo
 }
 
 // TagById 根据标签 ID 获取标签
-func (s *TagService) TagById(c *gin.Context, id uint) (*models.Tag, error) {
+func (s *TagService) TagById(c context.Context, id uint) (*models.Tag, error) {
 	ret, err := s.tagRepo.TagById(c, id)
 	if err != nil {
 		logger.Log.Error("获取标签失败", zap.Error(err))
@@ -157,7 +156,7 @@ func (s *TagService) TagById(c *gin.Context, id uint) (*models.Tag, error) {
 }
 
 // TagByDisplayName 根据标签名获取标签
-func (s *TagService) TagByDisplayName(c *gin.Context, displayName string) (*models.Tag, error) {
+func (s *TagService) TagByDisplayName(c context.Context, displayName string) (*models.Tag, error) {
 	ret, err := s.tagRepo.TagByDisplayName(c, displayName)
 	if err != nil {
 		logger.Log.Error("获取标签失败", zap.Error(err))
@@ -167,7 +166,7 @@ func (s *TagService) TagByDisplayName(c *gin.Context, displayName string) (*mode
 }
 
 // TagBySlug 根据标签别名获取标签
-func (s *TagService) TagBySlug(c *gin.Context, slug string) (*models.Tag, error) {
+func (s *TagService) TagBySlug(c context.Context, slug string) (*models.Tag, error) {
 	ret, err := s.tagRepo.TagBySlug(c, slug)
 	if err != nil {
 		logger.Log.Error("获取标签失败", zap.Error(err))
@@ -177,7 +176,7 @@ func (s *TagService) TagBySlug(c *gin.Context, slug string) (*models.Tag, error)
 }
 
 // TagCount 标签数量
-func (s *TagService) TagCount(c *gin.Context) (int64, error) {
+func (s *TagService) TagCount(c context.Context) (int64, error) {
 	count, err := s.tagRepo.TagCount(c)
 
 	if err != nil {
@@ -192,7 +191,7 @@ func (s *TagService) TagCount(c *gin.Context) (int64, error) {
 //   - c: 上下文
 //   - slug: 别名
 //   - tagId: 标签 ID，用于排除自己（添加新标签时可以传 nil）
-func (s *TagService) isSlugExist(c *gin.Context, slug string, tagId *uint) (bool, error) {
+func (s *TagService) isSlugExist(c context.Context, slug string, tagId *uint) (bool, error) {
 	tag, err := s.tagRepo.TagBySlug(c, slug)
 	if err != nil {
 		return false, response.ServerError

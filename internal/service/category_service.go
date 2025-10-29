@@ -8,7 +8,6 @@ import (
 	"nola-go/internal/models/response"
 	"nola-go/internal/repository"
 
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -25,7 +24,7 @@ func NewCategoryService(categoryRepo repository.CategoryRepository) *CategorySer
 }
 
 // AddCategory 添加分类
-func (s *CategoryService) AddCategory(c *gin.Context, displayName string, slug string, cover *string, unifiedCover *bool) (*models.Category, error) {
+func (s *CategoryService) AddCategory(c context.Context, displayName string, slug string, cover *string, unifiedCover *bool) (*models.Category, error) {
 	// 先判断分类别名是否已经存在
 	exist, err := s.isSlugExist(c, slug, nil)
 	if err != nil {
@@ -61,7 +60,7 @@ func (s *CategoryService) AddCategory(c *gin.Context, displayName string, slug s
 }
 
 // DeleteCategories 根据分类 ID 数组删除分类
-func (s *CategoryService) DeleteCategories(c *gin.Context, categoryIds []uint) (bool, error) {
+func (s *CategoryService) DeleteCategories(c context.Context, categoryIds []uint) (bool, error) {
 	ret, err := s.categoryRepo.DeleteCategories(c, categoryIds)
 	if err != nil {
 		logger.Log.Error("删除分类失败 - Ids", zap.Error(err))
@@ -72,7 +71,7 @@ func (s *CategoryService) DeleteCategories(c *gin.Context, categoryIds []uint) (
 }
 
 // DeleteCategoryBySlugs 根据别名数组删除分类
-func (s *CategoryService) DeleteCategoryBySlugs(c *gin.Context, slugs []string) (bool, error) {
+func (s *CategoryService) DeleteCategoryBySlugs(c context.Context, slugs []string) (bool, error) {
 	ret, err := s.categoryRepo.DeleteCategoryBySlugs(c, slugs)
 	if err != nil {
 		logger.Log.Error("删除分类失败 - Slugs", zap.Error(err))
@@ -83,7 +82,7 @@ func (s *CategoryService) DeleteCategoryBySlugs(c *gin.Context, slugs []string) 
 }
 
 // UpdateCategory 修改分类
-func (s *CategoryService) UpdateCategory(c *gin.Context, category *models.Category) (bool, error) {
+func (s *CategoryService) UpdateCategory(c context.Context, category *models.Category) (bool, error) {
 	// 先判断分类别名是否已存在
 	exist, err := s.isSlugExist(c, category.Slug, &category.CategoryId)
 	if err != nil {
@@ -106,7 +105,7 @@ func (s *CategoryService) UpdateCategory(c *gin.Context, category *models.Catego
 }
 
 // Categories 获取所有分类
-func (s *CategoryService) Categories(c *gin.Context) ([]*models.Category, error) {
+func (s *CategoryService) Categories(c context.Context) ([]*models.Category, error) {
 	ret, err := s.categoryRepo.Categories(c)
 
 	if err != nil {
@@ -118,7 +117,7 @@ func (s *CategoryService) Categories(c *gin.Context) ([]*models.Category, error)
 }
 
 // CategoriesPager 分页获取所有分类
-func (s *CategoryService) CategoriesPager(c *gin.Context, page, size int) (*models.Pager[models.Category], error) {
+func (s *CategoryService) CategoriesPager(c context.Context, page, size int) (*models.Pager[models.Category], error) {
 	if page == 0 {
 		// 获取所有分类
 		categories, err := s.Categories(c)
@@ -144,7 +143,7 @@ func (s *CategoryService) CategoriesPager(c *gin.Context, page, size int) (*mode
 }
 
 // TopCategories 获取文章数量最多的 6 个分类
-func (s *CategoryService) TopCategories(c *gin.Context) ([]*models.Category, error) {
+func (s *CategoryService) TopCategories(c context.Context) ([]*models.Category, error) {
 	ret, err := s.categoryRepo.TopCategories(c)
 	if err != nil {
 		logger.Log.Error("获取分类失败", zap.Error(err))
@@ -165,7 +164,7 @@ func (s *CategoryService) CategoryById(c context.Context, id uint) (*models.Cate
 }
 
 // CategoryByDisplayName 根据分类名获取分类
-func (s *CategoryService) CategoryByDisplayName(c *gin.Context, displayName string) (*models.Category, error) {
+func (s *CategoryService) CategoryByDisplayName(c context.Context, displayName string) (*models.Category, error) {
 	ret, err := s.categoryRepo.CategoryByDisplayName(c, displayName)
 	if err != nil {
 		logger.Log.Error("获取分类失败", zap.Error(err))
@@ -175,7 +174,7 @@ func (s *CategoryService) CategoryByDisplayName(c *gin.Context, displayName stri
 }
 
 // CategoryBySlug 根据分类别名获取分类
-func (s *CategoryService) CategoryBySlug(c *gin.Context, slug string) (*models.Category, error) {
+func (s *CategoryService) CategoryBySlug(c context.Context, slug string) (*models.Category, error) {
 	ret, err := s.categoryRepo.CategoryBySlug(c, slug)
 	if err != nil {
 		logger.Log.Error("获取分类失败", zap.Error(err))
@@ -185,7 +184,7 @@ func (s *CategoryService) CategoryBySlug(c *gin.Context, slug string) (*models.C
 }
 
 // CategoryCount 分类数量
-func (s *CategoryService) CategoryCount(c *gin.Context) (int64, error) {
+func (s *CategoryService) CategoryCount(c context.Context) (int64, error) {
 	count, err := s.categoryRepo.CategoryCount(c)
 
 	if err != nil {
@@ -200,7 +199,7 @@ func (s *CategoryService) CategoryCount(c *gin.Context) (int64, error) {
 //   - c: 上下文
 //   - slug: 别名
 //   - categoryId: 分类 ID，用于排除自己（添加新分类时可以传 nil）
-func (s *CategoryService) isSlugExist(c *gin.Context, slug string, categoryId *uint) (bool, error) {
+func (s *CategoryService) isSlugExist(c context.Context, slug string, categoryId *uint) (bool, error) {
 	category, err := s.categoryRepo.CategoryBySlug(c, slug)
 	if err != nil {
 		return false, response.ServerError

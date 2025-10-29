@@ -27,6 +27,11 @@ func StringIsNumberAndChar(s string) bool {
 	return regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString(s)
 }
 
+// StringIsNumber 判断一个字符串是否是数字
+func StringIsNumber(s string) bool {
+	return regexp.MustCompile(`^\d+$`).MatchString(s)
+}
+
 // StringIsNilOrBlank 判断一个字符串是否为 nil 或者空白字符串
 func StringIsNilOrBlank(s *string) bool {
 	return s == nil || len(*s) == 0 || StringIsBlank(*s)
