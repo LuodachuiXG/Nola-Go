@@ -770,7 +770,7 @@ func (s *PostService) checkTagAndCategoryExist(ctx context.Context, req *request
 			return err
 		}
 		if len(nonExistIds) > 0 {
-			return errors.New(fmt.Sprintf("标签 [%v] 不存在", nonExistIds))
+			return errors.New(fmt.Sprintf("标签 %v 不存在", nonExistIds))
 		}
 	}
 
@@ -794,7 +794,7 @@ func (s *PostService) checkTagAndCategoryExist(ctx context.Context, req *request
 //   - req: 文章请求体
 //   - isUpdate: 是否是修改文章（true 从数据库获取当前文章内容，false 从 req 获取文章内容）
 func (s *PostService) autoGenerateExcerpt(ctx context.Context, req *request.PostRequest, isUpdate bool) error {
-	if req == nil || req.AutoGenerateExcerpt == false {
+	if req == nil || *req.AutoGenerateExcerpt == false {
 		// 不用自动生成摘要
 		return nil
 	}

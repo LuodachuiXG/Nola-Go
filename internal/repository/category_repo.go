@@ -177,6 +177,9 @@ func (r *categoryRepo) CategoryByPostId(ctx context.Context, postId uint) (*mode
 	var category *models.Category
 	err := r.sqlSelectCategory().WithContext(ctx).Where("pc.post_id = ?", postId).First(&category).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return category, nil

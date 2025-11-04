@@ -13,13 +13,13 @@ type PostRequest struct {
 	// Title 标题
 	Title string `json:"title" binding:"required"`
 	// AutoGenerateExcerpt 是否自动生成摘要
-	AutoGenerateExcerpt bool `json:"autoGenerateExcerpt" binding:"required"`
+	AutoGenerateExcerpt *bool `json:"autoGenerateExcerpt" binding:"required"`
 	// Excerpt 摘要
 	Excerpt *string `json:"excerpt"`
 	// Slug 别名
 	Slug string `json:"slug" binding:"required"`
 	// AllowComment 是否允许评论
-	AllowComment bool `json:"allowComment" binding:"required"`
+	AllowComment *bool `json:"allowComment" binding:"required"`
 	// Status 文章状态
 	Status enum.PostStatus `json:"status" binding:"required"`
 	// Visible 文章可见性
@@ -59,10 +59,10 @@ func NewPostRequestByNameAndContent(name string, content string) *PostRequest {
 	return &PostRequest{
 		PostId:              nil,
 		Title:               title,
-		AutoGenerateExcerpt: true,
+		AutoGenerateExcerpt: util.BoolPtr(true),
 		Slug:                util.StringPostNameToSlug(name),
 		Excerpt:             nil,
-		AllowComment:        true,
+		AllowComment:        util.BoolPtr(true),
 		Status:              enum.PostStatusPublished,
 		Visible:             enum.PostVisibleVisible,
 		Content:             util.StringPtr(content),

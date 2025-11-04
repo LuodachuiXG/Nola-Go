@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"nola-go/internal/db"
 	"nola-go/internal/models"
 	"nola-go/internal/models/enum"
@@ -137,11 +138,11 @@ func (r *postRepo) AddPost(ctx context.Context, req *request.PostRequest) (*mode
 
 	post := models.Post{
 		Title:               req.Title,
-		AutoGenerateExcerpt: req.AutoGenerateExcerpt,
+		AutoGenerateExcerpt: *req.AutoGenerateExcerpt,
 		Excerpt:             util.StringDefault(req.Excerpt, ""),
 		Slug:                req.Slug,
 		Cover:               req.Cover,
-		AllowComment:        req.AllowComment,
+		AllowComment:        *req.AllowComment,
 		Pinned:              req.Pinned,
 		Status:              req.Status,
 		Visible:             req.Visible,
@@ -214,21 +215,17 @@ func (r *postRepo) AddPost(ctx context.Context, req *request.PostRequest) (*mode
 }
 
 // DeletePostByIds 根据文章 ID 数组删除文章
-func (r *postRepo) DeletePostByIds(ctx context.Context, ids []uint) (bool, error) {
+func (r *postRepo) DeletePostByIds(ctx context.Context, ids []uint) (success bool, err error) {
 
 	if len(ids) == 0 {
 		return false, nil
 	}
 
 	tx := r.db.WithContext(ctx).Begin()
-	defer func() {
-		if err := recover(); err != nil {
-			tx.Rollback()
-		}
-	}()
+	defer handlePanic(tx)(&success, &err)
 
 	// 删除文章内容
-	err := tx.Where("post_id IN ?", ids).Delete(&models.PostContent{}).Error
+	err = tx.Where("post_id IN ?", ids).Delete(&models.PostContent{}).Error
 	if err != nil {
 		tx.Rollback()
 		return false, err
@@ -249,8 +246,8 @@ func (r *postRepo) DeletePostByIds(ctx context.Context, ids []uint) (bool, error
 	}
 
 	// 删除文章
-	err = tx.Where("post_id IN ?", ids).Delete(&models.Post{}).Error
-	if err != nil {
+	ret := tx.Where("post_id IN ?", ids).Delete(&models.Post{})
+	if err := ret.Error; err != nil {
 		tx.Rollback()
 		return false, err
 	}
@@ -259,7 +256,7 @@ func (r *postRepo) DeletePostByIds(ctx context.Context, ids []uint) (bool, error
 		return false, err
 	}
 
-	return true, nil
+	return ret.RowsAffected > 0, nil
 }
 
 // UpdatePostStatusToDeleted 修改文章状态为删除
@@ -273,30 +270,26 @@ func (r *postRepo) UpdatePostStatusTo(ctx context.Context, ids []uint, status en
 		return false, nil
 	}
 
-	err := r.db.WithContext(ctx).Where("post_id IN ?", ids).Update("status", status).Error
-	if err != nil {
+	ret := r.db.WithContext(ctx).Model(&models.Post{}).Where("post_id IN ?", ids).Update("status", status)
+	if err := ret.Error; err != nil {
 		return false, err
 	}
 
-	return true, nil
+	return ret.RowsAffected > 0, nil
 }
 
 // UpdatePost 修改文章
-func (r *postRepo) UpdatePost(ctx context.Context, req *request.PostRequest) (bool, error) {
+func (r *postRepo) UpdatePost(ctx context.Context, req *request.PostRequest) (success bool, err error) {
 
 	if req.PostId == nil {
 		return false, errors.New("文章 ID 不能为 nil")
 	}
 
 	tx := r.db.WithContext(ctx).Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
+	defer handlePanic(tx)(&success, &err)
 
 	// 删除文章标签
-	err := tx.Where("post_id = ?", req.PostId).Delete(&models.PostTag{}).Error
+	err = tx.Where("post_id = ?", req.PostId).Delete(&models.PostTag{}).Error
 	if err != nil {
 		tx.Rollback()
 		return false, err
@@ -337,14 +330,6 @@ func (r *postRepo) UpdatePost(ctx context.Context, req *request.PostRequest) (bo
 		}
 	}
 
-	var pwd *string
-	if !util.StringIsNilOrBlank(req.Password) && *req.Encrypted == true {
-		// 密码不为空
-		pwd = util.StringPtr(util.GenerateHash(*req.Password))
-	} else {
-		pwd = nil
-	}
-
 	// 更新文章
 	newPost := map[string]any{
 		"title":                 req.Title,
@@ -354,13 +339,20 @@ func (r *postRepo) UpdatePost(ctx context.Context, req *request.PostRequest) (bo
 		"allow_comment":         req.AllowComment,
 		"status":                req.Status,
 		"visible":               req.Visible,
-		"cover":                 *req.Cover,
+		"cover":                 req.Cover,
 		"pinned":                req.Pinned,
-		"password":              pwd,
 	}
 
-	err = tx.Model(&models.Post{}).Where("post_id = ?", req.PostId).Updates(newPost).Error
-	if err != nil {
+	if !util.StringIsNilOrBlank(req.Password) && req.Encrypted != nil && *req.Encrypted == true {
+		// 设置新密码
+		newPost["password"] = util.GenerateHash(*req.Password)
+	} else if req.Encrypted != nil && *req.Encrypted == false {
+		// 移除旧密码
+		newPost["password"] = nil
+	}
+
+	ret := tx.Model(&models.Post{}).Where("post_id = ?", req.PostId).Updates(newPost)
+	if err := ret.Error; err != nil {
 		tx.Rollback()
 		return false, err
 	}
@@ -369,7 +361,7 @@ func (r *postRepo) UpdatePost(ctx context.Context, req *request.PostRequest) (bo
 		return false, err
 	}
 
-	return true, nil
+	return ret.RowsAffected > 0, nil
 }
 
 // UpdatePostStatus 修改文章状态（状态、可见性、置顶）
@@ -378,7 +370,8 @@ func (r *postRepo) UpdatePostStatus(ctx context.Context, req *request.PostStatus
 		return false, nil
 	}
 
-	var updates map[string]any
+	updates := map[string]any{}
+
 	if req.Status != nil {
 		updates["status"] = req.Status
 	}
@@ -389,39 +382,39 @@ func (r *postRepo) UpdatePostStatus(ctx context.Context, req *request.PostStatus
 		updates["pinned"] = req.Pinned
 	}
 
-	err := r.db.WithContext(ctx).Where("post_id = ?", req.PostId).Model(&models.Post{}).Updates(updates).Error
-	if err != nil {
+	ret := r.db.WithContext(ctx).Model(&models.Post{}).Where("post_id = ?", req.PostId).Updates(updates)
+	if err := ret.Error; err != nil {
 		return false, err
 	}
 
-	return true, nil
+	return ret.RowsAffected > 0, nil
 }
 
 // UpdatePostExcerpt 修改文章摘要
 func (r *postRepo) UpdatePostExcerpt(ctx context.Context, postId uint, excerpt string) (bool, error) {
-	err := r.db.WithContext(ctx).Where("post_id = ?", postId).Update("excerpt", excerpt).Error
-	if err != nil {
+	ret := r.db.WithContext(ctx).Model(&models.Post{}).Where("post_id = ?", postId).Update("excerpt", excerpt)
+	if err := ret.Error; err != nil {
 		return false, err
 	}
-	return true, nil
+	return ret.RowsAffected > 0, nil
 }
 
 // UpdatePostLastModifyTime 修改文章最后修改时间
 func (r *postRepo) UpdatePostLastModifyTime(ctx context.Context, postId uint, time *int64) (bool, error) {
-	err := r.db.WithContext(ctx).Where("post_id = ?", postId).Update("last_modify_time", time).Error
-	if err != nil {
+	ret := r.db.WithContext(ctx).Model(&models.Post{}).Where("post_id = ?", postId).Update("last_modify_time", time)
+	if err := ret.Error; err != nil {
 		return false, err
 	}
-	return true, nil
+	return ret.RowsAffected > 0, nil
 }
 
 // AddPostVisit 增加文章访问量
 func (r *postRepo) AddPostVisit(ctx context.Context, id uint) (bool, error) {
-	err := r.db.WithContext(ctx).Where("post_id = ?", id).Update("visit", gorm.Expr("visit + ?", 1)).Error
-	if err != nil {
+	ret := r.db.WithContext(ctx).Model(&models.Post{}).Where("post_id = ?", id).Update("visit", gorm.Expr("visit + ?", 1))
+	if err := ret.Error; err != nil {
 		return false, err
 	}
-	return true, nil
+	return ret.RowsAffected > 0, nil
 }
 
 // PostCount 获取文章总数
@@ -461,6 +454,9 @@ func (r *postRepo) PostById(ctx context.Context, id uint, includeTagAndCategory 
 	var post *models.Post
 	err := r.db.WithContext(ctx).Where("post_id = ?", id).First(&post).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -757,13 +753,13 @@ func (r *postRepo) DeletePostContent(ctx context.Context, postId uint, status en
 		query = query.Where("draft_name IN ?", draftNames)
 	}
 
-	err := query.Delete(&models.PostContent{}).Error
+	ret := query.Delete(&models.PostContent{})
 
-	if err != nil {
+	if err := ret.Error; err != nil {
 		return false, err
 	}
 
-	return true, nil
+	return ret.RowsAffected > 0, nil
 }
 
 // UpdatePostContent 修改文章内容
@@ -788,9 +784,9 @@ func (r *postRepo) UpdatePostContent(
 		"last_modify_time": currentTime,
 	}
 
-	err := query.Updates(updates).Error
+	ret := query.Updates(updates)
 
-	if err != nil {
+	if err := ret.Error; err != nil {
 		return false, err
 	}
 
@@ -800,20 +796,20 @@ func (r *postRepo) UpdatePostContent(
 		_, _ = r.UpdatePostLastModifyTime(ctx, pc.PostId, util.Int64Ptr(currentTime))
 	}
 
-	return true, nil
+	return ret.RowsAffected > 0, nil
 }
 
 // UpdatePostDraftName 修改文章草稿名
 func (r *postRepo) UpdatePostDraftName(ctx context.Context, postId uint, oldName string, newName string) (bool, error) {
-	err := r.db.WithContext(ctx).
+	ret := r.db.WithContext(ctx).
 		Model(&models.PostContent{}).
 		Where("post_id = ? AND draft_name = ?", postId, oldName).
-		Update("draft_name", newName).Error
+		Update("draft_name", newName)
 
-	if err != nil {
+	if err := ret.Error; err != nil {
 		return false, err
 	}
-	return true, nil
+	return ret.RowsAffected > 0, nil
 }
 
 // UpdatePostDraftToContent 将文章草稿转为文章正文
@@ -822,11 +818,11 @@ func (r *postRepo) UpdatePostDraftName(ctx context.Context, postId uint, oldName
 //   - draftName: 草稿名
 //   - deleteContent: 是否删除原来的正文
 //   - contentName: 文章正文名，留 nil 将默认使用被转换为正文的旧草稿名
-func (r *postRepo) UpdatePostDraftToContent(ctx context.Context, postId uint, draftName string, deleteContent bool, contentName *string) (bool, error) {
+func (r *postRepo) UpdatePostDraftToContent(ctx context.Context, postId uint, draftName string, deleteContent bool, contentName *string) (success bool, err error) {
 
 	// 获取原来的文章正文内容 ID
 	var postContentId uint
-	err := r.db.WithContext(ctx).
+	err = r.db.WithContext(ctx).
 		Model(&models.PostContent{}).
 		Select("post_content_id").
 		Where("post_id = ? AND status = ?", postId, enum.PostContentStatusPublished).
@@ -849,11 +845,7 @@ func (r *postRepo) UpdatePostDraftToContent(ctx context.Context, postId uint, dr
 	}
 
 	tx := r.db.WithContext(ctx).Begin()
-	defer func() {
-		if err := recover(); err != nil {
-			tx.Rollback()
-		}
-	}()
+	defer handlePanic(tx)(&success, &err)
 
 	if deleteContent {
 		// 删除原来的正文
@@ -887,14 +879,14 @@ func (r *postRepo) UpdatePostDraftToContent(ctx context.Context, postId uint, dr
 	}
 
 	// 将指定的草稿转为正文
-	err = tx.Model(&models.PostContent{}).
+	ret := tx.Model(&models.PostContent{}).
 		Where("post_content_id = ?", postContentDraftId).
 		Updates(map[string]any{
 			"status":     enum.PostContentStatusPublished,
 			"draft_name": nil,
-		}).Error
+		})
 
-	if err != nil {
+	if err := ret.Error; err != nil {
 		tx.Rollback()
 		return false, err
 	}
@@ -903,18 +895,18 @@ func (r *postRepo) UpdatePostDraftToContent(ctx context.Context, postId uint, dr
 		return false, err
 	}
 
-	return true, nil
+	return ret.RowsAffected > 0, nil
 }
 
 // IsPostPasswordValid 验证文章密码是否正确
 func (r *postRepo) IsPostPasswordValid(ctx context.Context, postId uint, password string) (bool, error) {
 	var count int64
-	err := r.db.WithContext(ctx).
+	ret := r.db.WithContext(ctx).
 		Model(&models.Post{}).
 		Where("post_id = ? AND password = ?", postId, util.GenerateHash(password)).
-		Count(&count).Error
+		Count(&count)
 
-	if err != nil {
+	if err := ret.Error; err != nil {
 		return false, err
 	}
 
@@ -1115,4 +1107,17 @@ func (r *postRepo) sqlQueryPosts(
 // sqlQueryKey 给查询条件加上关键字查询
 func (r *postRepo) sqlQueryKey(base *gorm.DB, key string) *gorm.DB {
 	return base.Where("p.title LIKE %?% OR p.slug LIKE %?% OR p.excerpt LIKE %?% OR pc.content LIKE %?%", key, key, key, key)
+}
+
+// handlePanic 处理 Panic
+func handlePanic(tx *gorm.DB) func(success *bool, err *error) {
+	return func(success *bool, err *error) {
+		if r := recover(); r != nil {
+			*err = fmt.Errorf("panic %v", r)
+			*success = false
+			if tx != nil {
+				tx.Rollback()
+			}
+		}
+	}
 }

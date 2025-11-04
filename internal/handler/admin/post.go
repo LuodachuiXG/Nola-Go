@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"nola-go/internal/logger"
 	"nola-go/internal/middleware"
 	"nola-go/internal/models/enum"
 	"nola-go/internal/models/request"
@@ -10,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // PostAdminHandler 文章后端接口
@@ -64,7 +66,7 @@ func (h *PostAdminHandler) RegisterAdmin(r *gin.RouterGroup) {
 		// 将文章草稿转换为文章正文
 		privateGroup.PUT("/draft/publish", h.updatePostDraftToPublish)
 		// 获取文章草稿
-		privateGroup.PUT("/:id/draft/:draftName", h.getPostDraft)
+		privateGroup.GET("/:id/draft/:draftName", h.getPostDraft)
 	}
 }
 
@@ -72,6 +74,7 @@ func (h *PostAdminHandler) RegisterAdmin(r *gin.RouterGroup) {
 func (h *PostAdminHandler) addPost(c *gin.Context) {
 	var req *request.PostRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Log.Error("参数错误", zap.Error(err))
 		response.ParamMismatch(c)
 		return
 	}
@@ -213,12 +216,12 @@ func (h *PostAdminHandler) getPost(c *gin.Context) {
 	}
 
 	var req struct {
-		Status   string  `form:"status"`
-		Visible  string  `form:"visible"`
-		key      *string `form:"key"`
-		tag      *string `form:"tag"`
-		category *string `form:"category"`
-		sort     *string `form:"sort"`
+		Status   *string `form:"status"`
+		Visible  *string `form:"visible"`
+		Key      *string `form:"key"`
+		Tag      *string `form:"tag"`
+		Category *string `form:"category"`
+		Sort     *string `form:"sort"`
 	}
 
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -226,18 +229,29 @@ func (h *PostAdminHandler) getPost(c *gin.Context) {
 		return
 	}
 
+	var statusEnum *enum.PostStatus
+	var visibleEnum *enum.PostVisible
+
 	// 文章状态和可见性
-	statusEnum := enum.PostStatusValueOf(req.Status)
-	visibleEnum := enum.PostVisibleValueOf(req.Visible)
-	if statusEnum == nil || visibleEnum == nil {
-		response.ParamMismatch(c)
-		return
+	if req.Status != nil {
+		statusEnum = enum.PostStatusValueOf(*req.Status)
+		if statusEnum == nil {
+			response.ParamMismatch(c)
+			return
+		}
+	}
+	if req.Visible != nil {
+		visibleEnum = enum.PostVisibleValueOf(*req.Visible)
+		if visibleEnum == nil {
+			response.ParamMismatch(c)
+			return
+		}
 	}
 
 	// 文章排序
 	var sortEnum *enum.PostSort = nil
-	if req.sort != nil {
-		sortEnum = enum.PostSortValueOf(*req.sort)
+	if req.Sort != nil {
+		sortEnum = enum.PostSortValueOf(*req.Sort)
 		if sortEnum == nil {
 			response.ParamMismatch(c)
 			return
@@ -245,15 +259,15 @@ func (h *PostAdminHandler) getPost(c *gin.Context) {
 	}
 
 	// 文章标签、分类是否是数字
-	if (req.tag != nil && !util.StringIsNumber(*req.tag)) ||
-		(req.category != nil && !util.StringIsNumber(*req.category)) {
+	if (req.Tag != nil && !util.StringIsNumber(*req.Tag)) ||
+		(req.Category != nil && !util.StringIsNumber(*req.Category)) {
 		response.ParamMismatch(c)
 		return
 	}
 
 	var tagId, categoryId *uint
-	if req.tag != nil {
-		if tagUint, err := strconv.ParseUint(*req.tag, 10, 32); err == nil {
+	if req.Tag != nil {
+		if tagUint, err := strconv.ParseUint(*req.Tag, 10, 32); err == nil {
 			tagId = new(uint)
 			*tagId = uint(tagUint)
 		} else {
@@ -262,8 +276,8 @@ func (h *PostAdminHandler) getPost(c *gin.Context) {
 		}
 	}
 
-	if req.category != nil {
-		if categoryUint, err := strconv.ParseUint(*req.category, 10, 32); err == nil {
+	if req.Category != nil {
+		if categoryUint, err := strconv.ParseUint(*req.Category, 10, 32); err == nil {
 			categoryId = new(uint)
 			*categoryId = uint(categoryUint)
 		} else {
@@ -272,7 +286,7 @@ func (h *PostAdminHandler) getPost(c *gin.Context) {
 		}
 	}
 
-	ret, err := h.postService.PostPager(c, page, size, statusEnum, visibleEnum, req.key, tagId, categoryId, sortEnum)
+	ret, err := h.postService.PostPager(c, page, size, statusEnum, visibleEnum, req.Key, tagId, categoryId, sortEnum)
 	if err != nil {
 		response.FailAndResponse(c, err.Error())
 		return
@@ -471,6 +485,11 @@ func (h *PostAdminHandler) getPostDraft(c *gin.Context) {
 	var req struct {
 		Id        uint   `uri:"id"`
 		DraftName string `uri:"draftName"`
+	}
+
+	if err := c.ShouldBindUri(&req); err != nil {
+		response.ParamMismatch(c)
+		return
 	}
 
 	ret, err := h.postService.PostContent(c, req.Id, enum.PostContentStatusDraft, &req.DraftName)

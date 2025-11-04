@@ -186,7 +186,14 @@ func (r *tagRepo) TagByPostId(ctx context.Context, postId uint) ([]*models.Tag, 
 	var tags []*models.Tag
 	err := r.sqlSelectTag().WithContext(ctx).Where("pt.post_id = ?", postId).Scan(&tags).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return []*models.Tag{}, nil
+		}
 		return nil, err
+	}
+
+	if tags == nil {
+		return []*models.Tag{}, nil
 	}
 	return tags, nil
 }

@@ -23,9 +23,9 @@ func PostVisiblePtr(v PostVisible) *PostVisible {
 // PostVisibleValueOf 尝试将字符串转为文章可见性枚举
 func PostVisibleValueOf(s string) *PostVisible {
 	switch s {
-	case "VISIBLE":
+	case string(PostVisibleVisible):
 		return PostVisiblePtr(PostVisibleVisible)
-	case "HIDDEN":
+	case string(PostVisibleHidden):
 		return PostVisiblePtr(PostVisibleHidden)
 	default:
 		return nil

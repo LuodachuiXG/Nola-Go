@@ -19,3 +19,8 @@ func IntPtr(i int) *int {
 func UintPrt(i uint) *uint {
 	return &i
 }
+
+// BoolPtr 返回一个指向 bool 的指针
+func BoolPtr(b bool) *bool {
+	return &b
+}

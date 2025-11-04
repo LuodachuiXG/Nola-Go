@@ -45,5 +45,5 @@ func HtmlToPlainText(html string) string {
 // MarkdownToPlainText 将 Markdown 转为纯文本
 func MarkdownToPlainText(markdown string) string {
 	html := MarkdownToHtml(markdown)
-	return HtmlToPlainText(html)
+	return strings.ReplaceAll(HtmlToPlainText(html), "\n", "")
 }
