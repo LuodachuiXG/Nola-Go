@@ -65,6 +65,10 @@ func SetupRouters(r *gin.Engine, deps *Deps) *gin.Engine {
 		// 分类接口
 		categoryHandler := api.NewCategoryApiHandler(deps.CategoryService)
 		categoryHandler.RegisterApi(apiHandler)
+
+		// 文章接口
+		postHandler := api.NewPostApiHandler(deps.PostService)
+		postHandler.RegisterApi(apiHandler)
 	}
 
 	return r
