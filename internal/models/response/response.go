@@ -42,6 +42,20 @@ func FailAndResponse(ctx *gin.Context, errMsg string) {
 	ctx.JSON(http.StatusConflict, Fail(errMsg))
 }
 
+// NotFound 未找到响应体
+func NotFound() Response {
+	return Response{
+		Code:   http.StatusNotFound,
+		Data:   nil,
+		ErrMsg: util.StringPtr("404 Not Found."),
+	}
+}
+
+// NotFoundAndResponse 未找到并直接返回失败响应体
+func NotFoundAndResponse(ctx *gin.Context) {
+	ctx.JSON(http.StatusNotFound, NotFound())
+}
+
 // ParamMismatch 请求参数不匹配响应
 func ParamMismatch(ctx *gin.Context) {
 	FailAndResponse(ctx, "请求参数不匹配")

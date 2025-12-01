@@ -1,7 +1,6 @@
 package api
 
 import (
-	"net/http"
 	"nola-go/internal/models/enum"
 	"nola-go/internal/models/response"
 	"nola-go/internal/service"
@@ -29,6 +28,10 @@ func (h *PostApiHandler) RegisterApi(r *gin.RouterGroup) {
 		group.GET("", h.getPost)
 		// 获取文章 - 根据文章 ID
 		group.GET("/:id", h.getPostById)
+		// 获取文章 - 根据别名
+		group.GET("/slug/:slug", h.getPostBySlug)
+		// 获取文章内容
+		group.GET("/content", h.getPostContent)
 	}
 }
 
@@ -110,7 +113,64 @@ func (h *PostApiHandler) getPostById(c *gin.Context) {
 
 	if ret == nil || ret.Status != enum.PostStatusPublished {
 		// 文章不存在，或者文章未发布，则返回 404
-		c.JSON(http.StatusNotFound, http.StatusNotFound)
+		response.NotFoundAndResponse(c)
+		return
+	}
+
+	response.OkAndResponse(c, ret)
+}
+
+// getPostBySlug 获取文章 - 根据别名
+func (h *PostApiHandler) getPostBySlug(c *gin.Context) {
+	var req struct {
+		Slug string `uri:"slug"`
+	}
+
+	if err := c.ShouldBindUri(&req); err != nil {
+		response.ParamMismatch(c)
+	}
+
+	ret, err := h.postService.PostBySlug(c, req.Slug, true)
+	if err != nil {
+		response.FailAndResponse(c, err.Error())
+		return
+	}
+
+	if ret == nil || ret.Status != enum.PostStatusPublished {
+		// 文章不存在，或者文章未发布，返回 404
+		response.NotFoundAndResponse(c)
+		return
+	}
+	response.OkAndResponse(c, ret)
+}
+
+// getPostContent 获取文章内容
+func (h *PostApiHandler) getPostContent(c *gin.Context) {
+	var req struct {
+		ID       *uint   `form:"id" json:"id,omitempty"`
+		Slug     *string `form:"slug" json:"slug,omitempty"`
+		Password *string `form:"password" json:"password,omitempty"`
+	}
+
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.ParamMismatch(c)
+		return
+	}
+
+	if req.ID == nil && req.Slug == nil {
+		// 文章 ID 和别名都为空
+		response.FailAndResponse(c, "文章不存在或不可见")
+		return
+	}
+
+	ret, err := h.postService.ApiPostContent(c, req.ID, req.Slug, req.Password)
+	if err != nil {
+		response.FailAndResponse(c, err.Error())
+		return
+	}
+
+	if ret == nil {
+		response.FailAndResponse(c, "文章不存在或不可见")
 		return
 	}
 

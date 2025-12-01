@@ -510,6 +510,10 @@ func (s *PostService) ApiPostContent(ctx context.Context, id *uint, slug *string
 		post = p
 	}
 
+	if post == nil {
+		return nil, nil
+	}
+
 	if post.Status != enum.PostStatusPublished {
 		// 文章未发布
 		return nil, nil
