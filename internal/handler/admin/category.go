@@ -77,19 +77,19 @@ func (h *CategoryAdminHandler) addCategory(c *gin.Context) {
 
 // deleteCategoryByIds 根据分类 ID 数组删除分类
 func (h *CategoryAdminHandler) deleteCategoryByIds(c *gin.Context) {
-	var ids []uint
-	if err := c.ShouldBindJSON(&ids); err != nil {
+	var categoryIds []uint
+	if err := c.ShouldBindJSON(&categoryIds); err != nil {
 		response.ParamMismatch(c)
 		return
 	}
 
-	if len(ids) == 0 {
+	if len(categoryIds) == 0 {
 		response.OkAndResponse(c, false)
 		return
 	}
 
 	// 删除分类
-	ret, err := h.categoryService.DeleteCategories(c, ids)
+	ret, err := h.categoryService.DeleteCategories(c, categoryIds)
 
 	if err != nil {
 		response.FailAndResponse(c, err.Error())

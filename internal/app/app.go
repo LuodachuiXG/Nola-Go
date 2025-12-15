@@ -24,12 +24,14 @@ type Nola struct {
 	ConfigRepo      repository.ConfigRepository
 	TagRepo         repository.TagRepository
 	CategoryRepo    repository.CategoryRepository
+	LinkRepo        repository.LinkRepository
 	TokenService    *service.TokenService
 	UserService     *service.UserService
 	PostService     *service.PostService
 	ConfigService   *service.ConfigService
 	TagService      *service.TagService
 	CategoryService *service.CategoryService
+	LinkService     *service.LinkService
 	Engine          *gin.Engine
 }
 
@@ -70,6 +72,7 @@ func NewNola() (*Nola, error) {
 	a.TagRepo = repository.NewTagRepository(a.DB)
 	a.CategoryRepo = repository.NewCategoryRepository(a.DB)
 	a.PostRepo = repository.NewPostRepository(a.DB, a.TagRepo, a.CategoryRepo)
+	a.LinkRepo = repository.NewLinkRepository(a.DB)
 
 	// Service
 	a.TokenService = service.NewTokenService(a.Config.JWT)
@@ -78,6 +81,7 @@ func NewNola() (*Nola, error) {
 	a.TagService = service.NewTagService(a.TagRepo)
 	a.CategoryService = service.NewCategoryService(a.CategoryRepo)
 	a.PostService = service.NewPostService(a.PostRepo, a.TagService, a.CategoryService)
+	a.LinkService = service.NewLinkService(a.LinkRepo)
 
 	r := gin.New()
 
@@ -92,6 +96,7 @@ func NewNola() (*Nola, error) {
 		ConfigService:   a.ConfigService,
 		TagService:      a.TagService,
 		CategoryService: a.CategoryService,
+		LinkService:     a.LinkService,
 	})
 
 	// 只信任 本机代理
