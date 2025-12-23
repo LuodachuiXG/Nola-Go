@@ -121,7 +121,7 @@ func (r *linkRepo) Links(ctx context.Context, sort *enum.LinkSort) ([]*models.Li
 // LinksPager 分页获取友情链接
 func (r *linkRepo) LinksPager(ctx context.Context, page, size int, sort *enum.LinkSort) (*models.Pager[models.Link], error) {
 	if page == 0 {
-		// 获取所有文章
+		// 获取所有链接
 		data, err := r.Links(ctx, sort)
 		if err != nil {
 			return nil, err
@@ -170,9 +170,9 @@ func (r *linkRepo) sqlQueryLinks(ctx context.Context, sort *enum.LinkSort) *gorm
 		case enum.LinkSortCreateTimeAsc:
 			query = query.Order("l.create_time ASC")
 		case enum.LinkSortModifyTimeDesc:
-			query = query.Order("l.modify_time DESC")
+			query = query.Order("l.last_modify_time DESC")
 		case enum.LinkSortModifyTimeAsc:
-			query = query.Order("l.modify_time ASC")
+			query = query.Order("l.last_modify_time ASC")
 		}
 	} else {
 		// 默认优先级降序

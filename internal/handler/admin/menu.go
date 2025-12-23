@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"fmt"
 	"nola-go/internal/middleware"
 	"nola-go/internal/models/request"
 	"nola-go/internal/models/response"
@@ -51,7 +50,6 @@ func (h *MenuAdminHandler) RegisterAdmin(r *gin.RouterGroup) {
 func (h *MenuAdminHandler) addMenu(c *gin.Context) {
 	var req *request.MenuRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		fmt.Printf("%v", req)
 		response.ParamMismatch(c)
 		return
 	}
@@ -87,6 +85,12 @@ func (h *MenuAdminHandler) updateMenu(c *gin.Context) {
 		response.ParamMismatch(c)
 		return
 	}
+
+	if req.MenuId == nil {
+		response.ParamMismatch(c)
+		return
+	}
+
 	ret, err := h.menuService.UpdateMenu(c, req)
 	if err != nil {
 		response.FailAndResponse(c, err.Error())
