@@ -16,6 +16,7 @@ type Deps struct {
 	TagService      *service.TagService
 	CategoryService *service.CategoryService
 	LinkService     *service.LinkService
+	MenuService     *service.MenuService
 }
 
 // SetupRouters 初始化 Gin 路由
@@ -50,6 +51,10 @@ func SetupRouters(r *gin.Engine, deps *Deps) *gin.Engine {
 		linkHandler := admin.NewLinkAdminHandler(deps.LinkService, deps.TokenService)
 		linkHandler.RegisterAdmin(adminHandler)
 
+		// 菜单接口
+		menuHandler := admin.NewMenuAdminHandler(deps.MenuService, deps.TokenService)
+		menuHandler.RegisterAdmin(adminHandler)
+
 	}
 
 	// 博客接口（无需登录）
@@ -78,6 +83,10 @@ func SetupRouters(r *gin.Engine, deps *Deps) *gin.Engine {
 		// 友联接口
 		linkHandler := api.NewLinkApiHandler(deps.LinkService)
 		linkHandler.RegisterApi(apiHandler)
+
+		// 菜单接口
+		menuHandler := api.NewMenuApiHandler(deps.MenuService)
+		menuHandler.RegisterApi(apiHandler)
 	}
 
 	return r

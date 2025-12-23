@@ -16,15 +16,18 @@ import (
 )
 
 type Nola struct {
-	Config          *config.Config
-	DB              *gorm.DB
-	Redis           *redis.Client
-	UserRepo        repository.UserRepository
-	PostRepo        repository.PostRepository
-	ConfigRepo      repository.ConfigRepository
-	TagRepo         repository.TagRepository
-	CategoryRepo    repository.CategoryRepository
-	LinkRepo        repository.LinkRepository
+	Config *config.Config
+	DB     *gorm.DB
+	Redis  *redis.Client
+
+	UserRepo     repository.UserRepository
+	PostRepo     repository.PostRepository
+	ConfigRepo   repository.ConfigRepository
+	TagRepo      repository.TagRepository
+	CategoryRepo repository.CategoryRepository
+	LinkRepo     repository.LinkRepository
+	MenuRepo     repository.MenuRepository
+
 	TokenService    *service.TokenService
 	UserService     *service.UserService
 	PostService     *service.PostService
@@ -32,7 +35,9 @@ type Nola struct {
 	TagService      *service.TagService
 	CategoryService *service.CategoryService
 	LinkService     *service.LinkService
-	Engine          *gin.Engine
+	MenuService     *service.MenuService
+
+	Engine *gin.Engine
 }
 
 // NewNola 创建 Nola 实例
@@ -73,6 +78,7 @@ func NewNola() (*Nola, error) {
 	a.CategoryRepo = repository.NewCategoryRepository(a.DB)
 	a.PostRepo = repository.NewPostRepository(a.DB, a.TagRepo, a.CategoryRepo)
 	a.LinkRepo = repository.NewLinkRepository(a.DB)
+	a.MenuRepo = repository.NewMenuRepository(a.DB)
 
 	// Service
 	a.TokenService = service.NewTokenService(a.Config.JWT)
@@ -82,6 +88,7 @@ func NewNola() (*Nola, error) {
 	a.CategoryService = service.NewCategoryService(a.CategoryRepo)
 	a.PostService = service.NewPostService(a.PostRepo, a.TagService, a.CategoryService)
 	a.LinkService = service.NewLinkService(a.LinkRepo)
+	a.MenuService = service.NewMenuService(a.MenuRepo)
 
 	r := gin.New()
 
@@ -97,6 +104,7 @@ func NewNola() (*Nola, error) {
 		TagService:      a.TagService,
 		CategoryService: a.CategoryService,
 		LinkService:     a.LinkService,
+		MenuService:     a.MenuService,
 	})
 
 	// 只信任 本机代理

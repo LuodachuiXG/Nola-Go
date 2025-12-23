@@ -24,3 +24,11 @@ func UintPrt(i uint) *uint {
 func BoolPtr(b bool) *bool {
 	return &b
 }
+
+// DefaultPtr 获取一个指针的默认值
+func DefaultPtr[T any](value *T, defaultValue T) *T {
+	if value == nil {
+		return &defaultValue
+	}
+	return value
+}

@@ -170,7 +170,7 @@ func (r *tagRepo) TagsPager(ctx context.Context, page, size int) (*models.Pager[
 
 // TagById 获取标签 - ID
 func (r *tagRepo) TagById(ctx context.Context, id uint) (*models.Tag, error) {
-	var tag models.Tag
+	var tag *models.Tag
 	err := r.sqlSelectTag().WithContext(ctx).Where("t.tag_id = ?", id).First(&tag).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -178,7 +178,7 @@ func (r *tagRepo) TagById(ctx context.Context, id uint) (*models.Tag, error) {
 		}
 		return nil, err
 	}
-	return &tag, nil
+	return tag, nil
 }
 
 // TagByPostId 获取标签 - 文章 ID
