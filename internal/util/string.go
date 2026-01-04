@@ -1,7 +1,9 @@
 package util
 
 import (
+	"fmt"
 	"math/rand"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -78,4 +80,79 @@ func StringRandom(length int) string {
 		ret += string(chars[rand.Intn(len(chars))])
 	}
 	return ret
+}
+
+// StringFileNameAddRandomSuffix 给文件名后，文件扩展名前加上 5 个随机字符，
+// 用于在文件名已经存在时，防止文件名重复，
+// 如果该文件名后已经有随机字符，则重新修改该随机字符为新的随机字符。
+func StringFileNameAddRandomSuffix(s string) string {
+	// 先获取文件的扩展名
+	lastDotIndex := strings.LastIndex(s, ".")
+	fileExt := ""
+	fileName := s
+	randomStr := StringRandom(5)
+
+	if lastDotIndex != -1 {
+		// 不包含点号
+		fileExt = s[lastDotIndex+1:]
+		fileName = s[:lastDotIndex]
+	}
+
+	// 文件名中是否之前已经加了随机字符
+	isExistRandom := false
+
+	if len(fileName) >= 6 {
+		ret, err := regexp.MatchString("^_[a-z0-9]+$", fileName[len(fileName)-6:])
+		if err != nil {
+			isExistRandom = false
+		} else {
+			isExistRandom = ret
+		}
+	}
+
+	if isExistRandom {
+		// 文件名中已经存在随机字符，重新修改随机字符
+		return fmt.Sprintf("%s_%s.%s", fileName[:len(fileName)-6], randomStr, fileExt)
+	}
+
+	// 文件名中不存在随机字符，直接在文件名后加上
+	return fmt.Sprintf("%s_%s.%s", fileName, randomStr, fileExt)
+}
+
+// StringReplaceDoubleSlash 将所有双正反斜杠替换为当前系统的反斜杠
+func StringReplaceDoubleSlash(path string) string {
+	systemSlash := string(filepath.Separator)
+	return strings.ReplaceAll(
+		strings.ReplaceAll(path, "//", systemSlash),
+		"\\\\", systemSlash,
+	)
+}
+
+// StringFormatSlash 将所有反斜杠替换为当前系统的单斜杠
+func StringFormatSlash(path string) string {
+	systemSlash := string(filepath.Separator)
+	result := strings.ReplaceAll(path, "\\", systemSlash)
+	return StringReplaceDoubleSlash(result)
+}
+
+// StringSubstringAfterLast 获取字符串从指定字符后开始到字符串末尾的字符串
+//   - str: 待处理的字符串
+//   - delimiter: 分隔符
+//
+// Returns: 截取后的字符串
+func StringSubstringAfterLast(str, delimiter string) string {
+	index := strings.LastIndex(str, delimiter)
+	if index == -1 {
+		// 没有找到分隔符，返回原字符串
+		return str
+	}
+	return str[index+len(delimiter):]
+}
+
+// StringRemoveSlash 删除所有正斜杠和反斜杠
+func StringRemoveSlash(path string) string {
+	return strings.ReplaceAll(
+		strings.ReplaceAll(path, "/", ""),
+		"\\", "",
+	)
 }

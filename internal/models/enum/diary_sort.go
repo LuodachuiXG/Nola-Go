@@ -23,7 +23,7 @@ func DiarySortPtr(s DiarySort) *DiarySort {
 	return &s
 }
 
-// DiarySortValueOf 尝试将字符串转为友情链接排序枚举
+// DiarySortValueOf 尝试将字符串转为日记排序枚举
 func DiarySortValueOf(s string) *DiarySort {
 	switch s {
 	case "CREATE_TIME_DESC":
@@ -47,7 +47,7 @@ func (ls *DiarySort) UnmarshalJSON(data []byte) error {
 	}
 	// 验证是否为有效枚举值
 	if v := DiarySortValueOf(s); v == nil {
-		return fmt.Errorf("invalid LinkSort: %s", s)
+		return fmt.Errorf("invalid DiarySort: %s", s)
 	}
 	*ls = DiarySort(s)
 	return nil

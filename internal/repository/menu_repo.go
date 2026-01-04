@@ -403,7 +403,6 @@ func (r *menuRepo) MainMenuItemCount(ctx context.Context) (int64, error) {
 }
 
 // setMainMenu 将非此菜单 ID 的菜单设置为非主菜单
-// - Parameters:
 //   - ctx: 上下文
 //   - menuId: 菜单 ID（此菜单外的所有菜单都会被设为非主菜单，即 isMain = false）
 func (r *menuRepo) setMainMenu(ctx context.Context, menuId uint) (int, error) {
@@ -421,7 +420,6 @@ func (r *menuRepo) setMainMenu(ctx context.Context, menuId uint) (int, error) {
 
 // sqlUpdateMenuItemIndex 重新设置和新添加的菜单同级的菜单的 index
 // 需要在添加（或更新）当前给定的菜单前，调用此方法，用于空出当前菜单的 index 位置
-// - Parameters:
 //   - ctx: 上下文
 //   - newMenuItem: 新添加的菜单项
 //   - isAddMenu: 是否是添加菜单，修改菜单的话赋 false

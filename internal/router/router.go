@@ -1,6 +1,7 @@
 package router
 
 import (
+	"nola-go/internal/file"
 	"nola-go/internal/handler/admin"
 	"nola-go/internal/handler/api"
 	"nola-go/internal/service"
@@ -18,12 +19,14 @@ type Deps struct {
 	LinkService     *service.LinkService
 	MenuService     *service.MenuService
 	DiaryService    *service.DiaryService
+	FileService     *service.FileService
 }
 
 // SetupRouters 初始化 Gin 路由
 func SetupRouters(r *gin.Engine, deps *Deps) *gin.Engine {
 
 	// 静态资源
+	r.Static("/upload", file.LocalStoragePath)
 
 	// 后台接口（需要登录，登录拦截中间件在 Handler 内部细化设置）
 	adminHandler := r.Group("/admin")
@@ -60,6 +63,9 @@ func SetupRouters(r *gin.Engine, deps *Deps) *gin.Engine {
 		diaryHandler := admin.NewDiaryAdminHandler(deps.DiaryService, deps.TokenService)
 		diaryHandler.RegisterAdmin(adminHandler)
 
+		// 文件接口
+		fileHandler := admin.NewFileAdminHandler(deps.FileService, deps.TokenService)
+		fileHandler.RegisterAdmin(adminHandler)
 	}
 
 	// 博客接口（无需登录）

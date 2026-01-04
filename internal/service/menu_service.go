@@ -211,7 +211,6 @@ func (s *MenuService) AddMenuItem(c context.Context, menuItem *request.MenuItemR
 }
 
 // DeleteMenuItems 删除菜单项
-// - Parameters:
 //   - c: 上下文
 //   - menuItemIds: 菜单项 ID 列表
 func (s *MenuService) DeleteMenuItems(c context.Context, menuItemIds []uint) (bool, error) {
@@ -319,7 +318,6 @@ func (s *MenuService) MenuItem(c context.Context, menuItemId uint) (*models.Menu
 }
 
 // MenuItems 获取菜单项
-// - Parameters:
 //   - c: 上下文
 //   - menuId: 菜单 ID
 //   - buildTree: 是否构建菜单树
@@ -356,7 +354,6 @@ func (s *MenuService) MenuItems(c context.Context, menuId uint, buildTree bool) 
 }
 
 // MainMenu 获取主菜单的菜单项
-// - Parameters:
 //   - c: 上下文
 //   - buildTree: 是否构建菜单树
 func (s *MenuService) MainMenu(c context.Context, buildTree bool) ([]*response.MenuItemResponse, error) {
@@ -399,7 +396,6 @@ func (s *MenuService) MainMenuItemCount(c context.Context) (int64, error) {
 }
 
 // findChildrenIds 查找子菜单项 ID
-// - Parameters:
 //   - c: 上下文
 //   - parentMenuItemId: 父菜单项 ID
 //   - menuItems: 菜单项列表
@@ -417,7 +413,6 @@ func (s *MenuService) findChildrenIds(c context.Context, parentMenuItemId uint, 
 }
 
 // findMenuItemChildren 递归函数，查找并构建子菜单项
-// - Parameters:
 //   - parentMenuItemId: 父菜单项 ID
 //   - menuItems: 菜单项列表
 func (s *MenuService) findMenuItemChildren(parentMenuItemId *uint, items []*models.MenuItem) []*response.MenuItemResponse {

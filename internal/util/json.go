@@ -12,6 +12,13 @@ func ToJsonString(v any) *string {
 }
 
 // FromJsonString 将 JSON 字符串转为任意类型
+//   - jsonStr: JSON 字符串
+//   - v: 输出结果
 func FromJsonString(jsonStr *string, v any) error {
+
+	if StringIsNilOrBlank(jsonStr) {
+		return nil
+	}
+
 	return json.Unmarshal([]byte(*jsonStr), v)
 }
