@@ -27,6 +27,7 @@ func SetupRouters(r *gin.Engine, deps *Deps) *gin.Engine {
 
 	// 静态资源
 	r.Static("/upload", file.LocalStoragePath)
+	r.Static("/backup", ".nola/backup")
 
 	// 后台接口（需要登录，登录拦截中间件在 Handler 内部细化设置）
 	adminHandler := r.Group("/admin")
@@ -66,6 +67,10 @@ func SetupRouters(r *gin.Engine, deps *Deps) *gin.Engine {
 		// 文件接口
 		fileHandler := admin.NewFileAdminHandler(deps.FileService, deps.TokenService)
 		fileHandler.RegisterAdmin(adminHandler)
+
+		// 备份路由
+		backupHandler := admin.NewBackupAdminHandler(deps.PostService, deps.TokenService)
+		backupHandler.RegisterAdmin(adminHandler)
 	}
 
 	// 博客接口（无需登录）

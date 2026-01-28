@@ -1,10 +1,9 @@
 package main
 
-import (
-	"nola-go/internal/app"
-)
+import "nola-go/internal/app"
 
 func main() {
+
 	nola, err := app.NewNola()
 	if err != nil {
 		panic(err)

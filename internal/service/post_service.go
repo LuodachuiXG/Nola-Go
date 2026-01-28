@@ -11,7 +11,10 @@ import (
 	"nola-go/internal/models/response"
 	"nola-go/internal/repository"
 	"nola-go/internal/util"
+	"os"
+	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -734,9 +737,164 @@ func (s *PostService) isPostPasswordValid(ctx context.Context, id uint, password
 	return valid, nil
 }
 
-// ExportPosts 导出所有文章 TODO("待完善")
-func (s *PostService) ExportPosts(ctx context.Context) {
+// ExportPosts 导出所有文章
+func (s *PostService) ExportPosts(ctx context.Context) (*response.ExportPostResponse, error) {
+	// 总处理文章数量
+	var totalCount = 0
+	// 成功的文章数量
+	var successCount = 0
+	// 失败原因切片
+	var failResult []string
 
+	// 当前时间字符串
+	nowTime := util.FormatDate(time.Now())
+
+	// 文件夹名前缀
+	filePrefix := fmt.Sprintf("%s_Post", nowTime)
+
+	// 临时文件夹地址
+	tempDir := fmt.Sprintf("./.nola/temp/%s", filePrefix)
+
+	if util.IsDirExist(tempDir) {
+		_ = os.RemoveAll(tempDir)
+	}
+
+	// 先获取所有未删除的文章
+	posts, err := s.postRepo.Posts(ctx, true)
+	if err != nil {
+		logger.Log.Error("获取所有文章失败", zap.Error(err))
+		return nil, response.ServerError
+	}
+	posts = util.Filter(posts, func(post *response.PostResponse) bool {
+		return post.Status != enum.PostStatusDeleted
+	})
+
+	type postResult struct {
+		isSuccess bool
+		errMsg    string
+	}
+
+	resultChan := make(chan postResult, len(posts))
+	var wg sync.WaitGroup
+
+	for _, post := range posts {
+		wg.Add(1)
+		// 每个文章启动一个协程
+		go func(p *response.PostResponse) {
+			defer wg.Done()
+
+			// 当前文章的所有内容列表（包括正文和草稿）
+			items, err := s.postRepo.PostContents(ctx, p.PostId)
+			if err != nil {
+				logger.Log.Error("获取文章内容列表失败", zap.Error(err))
+				resultChan <- postResult{
+					isSuccess: false,
+					errMsg:    fmt.Sprintf("获取文章 [%s] 内容列表失败", post.Title),
+				}
+				return
+			}
+
+			// 写出文章元数据
+			err = s.postMetaDataToTempDir(post, tempDir)
+			if err != nil {
+				logger.Log.Error("写出文章元数据失败", zap.Error(err))
+				resultChan <- postResult{
+					isSuccess: false,
+					errMsg:    fmt.Sprintf("写出文章 [%s] 元数据失败", post.Title),
+				}
+				return
+			}
+
+			for _, item := range items {
+				// 获取当前文章具体内容
+				content, err := s.postRepo.PostContent(ctx, item.PostId, *item.Status, item.DraftName)
+				if err != nil {
+					logger.Log.Error("获取文章内容失败", zap.Error(err))
+					resultChan <- postResult{
+						isSuccess: false,
+						errMsg:    fmt.Sprintf("获取文章 [%s] 内容失败", post.Title),
+					}
+					continue
+				}
+
+				if content == nil {
+					if *item.Status == enum.PostContentStatusPublished {
+						resultChan <- postResult{
+							isSuccess: false,
+							errMsg:    fmt.Sprintf("[%s] 文章没有任何内容", post.Title),
+						}
+					} else {
+						resultChan <- postResult{
+							isSuccess: false,
+							errMsg:    fmt.Sprintf("[%s] 文章的 [%s] 草稿没有任何内容", post.Title, *item.DraftName),
+						}
+					}
+					continue
+				}
+
+				// 将当前文章内容写到临时文件夹
+				_, err = s.postToTempDir(post, content, tempDir)
+				if err != nil {
+					resultChan <- postResult{
+						isSuccess: false,
+						errMsg:    err.Error(),
+					}
+				} else {
+					resultChan <- postResult{
+						isSuccess: true,
+					}
+				}
+			}
+
+		}(post)
+	}
+
+	// 当所有生产者执行完成后，关闭通道
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	// 处理文章导出结果
+	for res := range resultChan {
+		totalCount++
+		if res.isSuccess {
+			successCount++
+		} else {
+			failResult = append(failResult, res.errMsg)
+		}
+	}
+
+	backupDir := "./.nola/backup"
+	// 检查备份目录是否存在
+	if !util.IsDirExist(backupDir) {
+		err := os.MkdirAll(backupDir, 0755)
+		if err != nil {
+			logger.Log.Error("创建备份目录失败", zap.Error(err))
+			return nil, response.ServerError
+		}
+	}
+
+	// 将存储文章内容的临时文件夹压缩
+	err = util.CreateFolderZip(tempDir, fmt.Sprintf("./.nola/backup/%s.zip", filePrefix))
+	if err != nil {
+		logger.Log.Error("创建压缩文件失败", zap.Error(err))
+		return nil, errors.New("压缩文件失败")
+	}
+
+	// 删除临时文件夹
+	err = os.RemoveAll(tempDir)
+	if err != nil {
+		logger.Log.Error(fmt.Sprintf("删除临时文件夹 [%s] 失败", tempDir), zap.Error(err))
+	}
+
+	return &response.ExportPostResponse{
+		SuccessCount: successCount,
+		FailCount:    len(failResult),
+		FailResult:   util.DefaultEmptySlice(failResult),
+		Path:         fmt.Sprintf("/backup/%s.zip", filePrefix),
+		Count:        totalCount,
+	}, nil
 }
 
 // MostViewedPost 获取浏览量最多的文章
@@ -759,9 +917,115 @@ func (s *PostService) PostVisitCount(ctx context.Context) (int64, error) {
 	return count, nil
 }
 
-// postToTempDir 将文章内容写入临时文件夹 TODO("待完善")
-func (s *PostService) postToTempDir(ctx context.Context, content *models.PostContent, dir string) (bool, error) {
-	return false, nil
+// postToTempDir 将文章内容写入临时文件夹
+//
+// Parameters:
+//   - post: 文章信息
+//   - content: 文章内容
+//   - tempDir: 临时文件夹地址
+func (s *PostService) postToTempDir(post *response.PostResponse, content *models.PostContent, tempDir string) (bool, error) {
+	// 临时文件夹是否存在
+	if !util.IsDirExist(tempDir) {
+		if err := os.MkdirAll(tempDir, 0755); err != nil {
+			logger.Log.Error("创建临时文件夹失败", zap.Error(err))
+			return false, errors.New("创建临时文件夹失败")
+		}
+	}
+
+	// 判断当前文章目录是否存在（文章文件夹名：<文章名>__<文章别名>）
+	postDir := filepath.Join(tempDir, fmt.Sprintf("%s__%s", post.Title, post.Slug))
+	if !util.IsDirExist(postDir) {
+		err := os.MkdirAll(postDir, 0755)
+		if err != nil {
+			logger.Log.Error("创建文章文件夹失败", zap.Error(err))
+			return false, errors.New(fmt.Sprintf("[%s] 创建文章文件夹失败", post.Title))
+		}
+	}
+
+	// 当前内容输出的文件夹
+	outputDir := postDir
+
+	// 判断当前文章内容类型
+	switch content.Status {
+	case enum.PostContentStatusPublished:
+		// 文章正文，检查正文文件夹是否存在
+		outputDir = filepath.Join(outputDir, "content")
+		if !util.IsDirExist(outputDir) {
+			if err := os.MkdirAll(outputDir, 0755); err != nil {
+				logger.Log.Error("创建文章正文内容文件夹失败", zap.Error(err))
+				return false, errors.New(fmt.Sprintf("[%s] 创建文章正文内容文件夹失败", post.Title))
+			}
+		}
+	case enum.PostContentStatusDraft:
+		// 文章草稿
+		outputDir = filepath.Join(outputDir, "draft")
+		if !util.IsDirExist(outputDir) {
+			if err := os.MkdirAll(outputDir, 0755); err != nil {
+				logger.Log.Error("创建文章草稿内容文件夹失败", zap.Error(err))
+				return false, errors.New(fmt.Sprintf("[%s] 创建文章草稿内容文件夹失败", post.Title))
+			}
+		}
+	}
+
+	// 构建文件名
+	postFileName := util.StringDefault(content.DraftName, "content")
+
+	// 要写入的文件地址
+	writerPath := filepath.Join(outputDir, postFileName+".md")
+
+	// 写入文件
+	err := os.WriteFile(writerPath, []byte(content.Content), 0644)
+	if err != nil {
+		logger.Log.Error("写入临时文件失败", zap.Error(err))
+		return false, errors.New("写入临时文件失败")
+	}
+
+	return true, nil
+}
+
+// postMetaDataToTempDir 将文章元数据写入临时文件夹
+//
+// Parameters:
+//   - post: 文章信息
+//   - tempDir: 临时文件夹地址
+func (s *PostService) postMetaDataToTempDir(post *response.PostResponse, tempDir string) error {
+
+	if post == nil {
+		return errors.New("文章信息不能为空")
+	}
+
+	if util.IsDirExist(tempDir) {
+		if err := os.MkdirAll(tempDir, 0755); err != nil {
+			logger.Log.Error("创建临时文件夹失败", zap.Error(err))
+			return errors.New("创建临时文件夹失败")
+		}
+	}
+
+	// 判断当前文章目录是否存在（文章文件夹名：<文章名>__<文章别名>）
+	postDir := filepath.Join(tempDir, fmt.Sprintf("%s__%s", post.Title, post.Slug))
+	if !util.IsDirExist(postDir) {
+		err := os.MkdirAll(postDir, 0755)
+		if err != nil {
+			logger.Log.Error("创建文章文件夹失败", zap.Error(err))
+			return errors.New(fmt.Sprintf("[%s] 创建文章文件夹失败", post.Title))
+		}
+	}
+
+	// 输出地址
+	outputPath := filepath.Join(postDir, "metadata.json")
+
+	// 文章源数据
+	metadata := response.NewPostMetaData(*post)
+
+	json := util.ToJsonString(metadata)
+
+	// 写出元数据
+	if err := os.WriteFile(outputPath, []byte(util.StringDefault(json, "")), 0644); err != nil {
+		logger.Log.Error("写出文章元数据失败", zap.Error(err))
+		return errors.New("写出文章元数据失败")
+	}
+
+	return nil
 }
 
 // checkTagAndCategoryExist 检查标签和分类是否存在

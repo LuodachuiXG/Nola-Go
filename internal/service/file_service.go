@@ -982,14 +982,14 @@ func (s *FileService) deleteDatabaseFilesByFileIndexes(ctx context.Context, file
 	}
 
 	// 过滤出有文件组的文件
-	havePath := util.Filter(pathIndexes, func(pair *models.Pair[string, *models.FileIndex]) bool {
+	hasPath := util.Filter(pathIndexes, func(pair *models.Pair[string, *models.FileIndex]) bool {
 		// 过滤掉没有文件组的文件
-		return s.pathHaveFileGroup(pair.First)
+		return s.pathHasFileGroup(pair.First)
 	})
 
 	// 获取本次要删除的文件涉及到的所有文件组
 	fileGroups, err := s.fileRepo.GetFileGroupsByPath(ctx,
-		util.Map(havePath,
+		util.Map(hasPath,
 			func(pair *models.Pair[string, *models.FileIndex]) string {
 				return pair.First
 			},
@@ -1017,7 +1017,7 @@ func (s *FileService) deleteDatabaseFilesByFileIndexes(ctx context.Context, file
 			// 获取文件名
 			Second: filepath.Base(index.Second.Name),
 		}
-		if s.pathHaveFileGroup(index.First) {
+		if s.pathHasFileGroup(index.First) {
 			// 当前文件有文件组
 			pair.First = fileGroupMap[index.First]
 		}
@@ -1050,8 +1050,8 @@ func (s *FileService) deleteDatabaseFilesByFileIndexes(ctx context.Context, file
 	return true, nil
 }
 
-// pathHaveFileGroup 根据路径字符串判断是否有文件组
+// pathHasFileGroup 根据路径字符串判断是否有文件组
 // 如果路径为""、"/"、"." 则认为没有文件组
-func (s *FileService) pathHaveFileGroup(path string) bool {
+func (s *FileService) pathHasFileGroup(path string) bool {
 	return len(path) > 0 && path != "" && path != "." && path != string(filepath.Separator)
 }

@@ -59,3 +59,42 @@ func NewPostResponses(posts []*models.Post) []*PostResponse {
 	}
 	return responses
 }
+
+// NewPostMetaData 新建文章导出元数据
+func NewPostMetaData(post PostResponse) models.PostMetaData {
+	ret := models.PostMetaData{
+		Title:               post.Title,
+		AutoGenerateExcerpt: post.AutoGenerateExcerpt,
+		Excerpt:             post.Excerpt,
+		Slug:                post.Slug,
+		Cover:               post.Cover,
+		AllowComment:        post.AllowComment,
+		Pinned:              *util.DefaultPtr(post.Pinned, false),
+		Status:              post.Status,
+		Visible:             post.Visible,
+		Visit:               post.Visit,
+		CreateTime:          post.CreateTime,
+	}
+
+	if post.Category != nil {
+		ret.Category = &models.CategoryMetaData{
+			DisplayName: post.Category.DisplayName,
+			Slug:        post.Category.Slug,
+		}
+	}
+
+	var tags []models.TagMetaData
+	for _, tag := range post.Tags {
+		if tag == nil {
+			continue
+		}
+		tags = append(tags, models.TagMetaData{
+			DisplayName: tag.DisplayName,
+			Slug:        tag.Slug,
+		})
+	}
+
+	ret.Tags = tags
+
+	return ret
+}
