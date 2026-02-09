@@ -8,7 +8,6 @@ import (
 	"nola-go/internal/models/response"
 	"nola-go/internal/service"
 	"nola-go/internal/util"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -267,9 +266,8 @@ func (h *PostAdminHandler) getPost(c *gin.Context) {
 
 	var tagId, categoryId *uint
 	if req.Tag != nil {
-		if tagUint, err := strconv.ParseUint(*req.Tag, 10, 32); err == nil {
-			tagId = new(uint)
-			*tagId = uint(tagUint)
+		if ti, err := util.StringToUint(*req.Tag); err == nil {
+			tagId = &ti
 		} else {
 			response.ParamMismatch(c)
 			return
@@ -277,9 +275,8 @@ func (h *PostAdminHandler) getPost(c *gin.Context) {
 	}
 
 	if req.Category != nil {
-		if categoryUint, err := strconv.ParseUint(*req.Category, 10, 32); err == nil {
-			categoryId = new(uint)
-			*categoryId = uint(categoryUint)
+		if ci, err := util.StringToUint(*req.Category); err == nil {
+			categoryId = &ci
 		} else {
 			response.ParamMismatch(c)
 			return

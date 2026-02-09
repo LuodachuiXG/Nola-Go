@@ -5,6 +5,7 @@ import (
 	"math"
 	"nola-go/internal/config"
 	"nola-go/internal/models"
+	"nola-go/internal/util"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -60,7 +61,7 @@ func PagerBuilder[T any](
 	return &models.Pager[T]{
 		Page:       page,
 		Size:       size,
-		Data:       data,
+		Data:       util.DefaultEmptySlice(data),
 		TotalData:  totalData,
 		TotalPages: totalPages,
 	}, nil

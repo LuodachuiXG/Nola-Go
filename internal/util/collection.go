@@ -34,6 +34,11 @@ func Find[T any](slice []T, predicate func(T) bool) *T {
 
 // Chunk 切割数组
 func Chunk[T any](slice []T, size int) [][]T {
+
+	if size <= 0 {
+		panic("size 必须大于 0")
+	}
+
 	var chunks [][]T
 	for i := 0; i < len(slice); i += size {
 		end := i + size
@@ -44,6 +49,16 @@ func Chunk[T any](slice []T, size int) [][]T {
 		chunks = append(chunks, slice[i:end])
 	}
 	return chunks
+}
+
+// AssociateBy 创建一个映射，将数组中的元素映射到指定的键
+func AssociateBy[T any, K comparable](slice []T, keyFunc func(T) K) map[K]T {
+	result := make(map[K]T)
+	for _, item := range slice {
+		key := keyFunc(item)
+		result[key] = item
+	}
+	return result
 }
 
 // DefaultEmptySlice 默认空数组

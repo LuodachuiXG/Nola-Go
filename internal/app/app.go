@@ -29,6 +29,7 @@ type Nola struct {
 	MenuRepo     repository.MenuRepository
 	DiaryRepo    repository.DiaryRepository
 	FileRepo     repository.FileRepository
+	CommentRepo  repository.CommentRepository
 
 	TokenService    *service.TokenService
 	UserService     *service.UserService
@@ -40,6 +41,7 @@ type Nola struct {
 	MenuService     *service.MenuService
 	DiaryService    *service.DiaryService
 	FileService     *service.FileService
+	CommentService  *service.CommentService
 
 	Engine *gin.Engine
 }
@@ -85,6 +87,7 @@ func NewNola() (*Nola, error) {
 	a.MenuRepo = repository.NewMenuRepository(a.DB)
 	a.DiaryRepo = repository.NewDiaryRepository(a.DB)
 	a.FileRepo = repository.NewFileRepo(a.DB)
+	a.CommentRepo = repository.NewCommentRepository(a.DB)
 
 	// Service
 	a.TokenService = service.NewTokenService(a.Config.JWT)
@@ -97,6 +100,7 @@ func NewNola() (*Nola, error) {
 	a.MenuService = service.NewMenuService(a.MenuRepo)
 	a.DiaryService = service.NewDiaryService(a.DiaryRepo)
 	a.FileService = service.NewFileService(a.FileRepo)
+	a.CommentService = service.NewCommentService(a.CommentRepo, a.PostRepo)
 
 	r := gin.New()
 
@@ -115,6 +119,7 @@ func NewNola() (*Nola, error) {
 		MenuService:     a.MenuService,
 		DiaryService:    a.DiaryService,
 		FileService:     a.FileService,
+		CommentService:  a.CommentService,
 	})
 
 	// 只信任 本机代理

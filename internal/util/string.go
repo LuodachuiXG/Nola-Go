@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/mozillazg/go-pinyin"
@@ -155,4 +156,23 @@ func StringRemoveSlash(path string) string {
 		strings.ReplaceAll(path, "/", ""),
 		"\\", "",
 	)
+}
+
+// StringIsUrl 判断文本是否是合法的 URL
+func StringIsUrl(text string) bool {
+	return regexp.MustCompile(`^(http|https)://[^.]+\.[^/]*$`).MatchString(text)
+}
+
+// StringToUint 将字符串转换为 uint
+func StringToUint(s string) (uint, error) {
+	var ret *uint
+	ui, err := strconv.ParseUint(s, 10, 32)
+
+	if err == nil {
+		ret = new(uint)
+		*ret = uint(ui)
+		return *ret, nil
+	}
+
+	return 0, err
 }

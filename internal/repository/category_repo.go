@@ -133,11 +133,8 @@ func (r *categoryRepo) UpdateCategory(ctx context.Context, category *models.Cate
 		"cover":         *category.Cover,
 		"unified_cover": category.UnifiedCover,
 	}
-	err := r.db.WithContext(ctx).Where("`category_id` = ?", category.CategoryId).Model(&models.Category{}).Updates(updates).Error
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	ret := r.db.WithContext(ctx).Where("`category_id` = ?", category.CategoryId).Model(&models.Category{}).Updates(updates)
+	return ret.RowsAffected > 0, ret.Error
 }
 
 // Categories 获取所有分类

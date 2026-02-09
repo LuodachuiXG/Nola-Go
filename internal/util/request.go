@@ -17,9 +17,13 @@ func ShouldBindPager(c *gin.Context) (page, size int, err error) {
 	if err := c.ShouldBindQuery(&pager); err != nil {
 		return 0, 0, errors.New("请求参数不匹配")
 	}
-	
+
 	if pager.Page == nil {
 		pager.Page = IntPtr(0)
+	}
+
+	if pager.Size == nil {
+		pager.Size = IntPtr(0)
 	}
 
 	if *pager.Page == 0 {
